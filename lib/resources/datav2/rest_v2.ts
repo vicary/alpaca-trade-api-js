@@ -58,7 +58,7 @@ export function dataV2HttpRequest(
   queryParams: any,
   config: any
 ): Promise<AxiosResponse<any>> {
-  const { dataBaseUrl, keyId, secretKey, oauth } = config;
+  const { dataBaseUrl, keyId, secretKey, oauth, timeout } = config;
   const headers: any = {
     "Content-Type": "application/json",
     "Accept-Encoding": "gzip",
@@ -73,6 +73,7 @@ export function dataV2HttpRequest(
     .get(`${dataBaseUrl}${url}`, {
       params: queryParams,
       headers: headers,
+      timeout: timeout,
     })
     .catch((err: any) => {
       throw new Error(
