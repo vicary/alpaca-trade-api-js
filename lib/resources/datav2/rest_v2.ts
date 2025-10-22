@@ -76,6 +76,10 @@ export function dataV2HttpRequest(
       timeout: timeout,
     })
     .catch((err: any) => {
+      if (!err.response) {
+        throw err;
+      }
+      
       throw new Error(
         `code: ${err.response?.status || err.statusCode}, message: ${
           err.response?.data.message
