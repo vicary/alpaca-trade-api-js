@@ -2,7 +2,7 @@
 
 const expect = require("chai").expect;
 const mock = require("../support/mock-server");
-const Alpaca = require("../../dist/alpaca-trade-api");
+const { default: Alpaca } = require("../../dist/alpaca-trade-api");
 
 describe("order resource", function () {
   const alpaca = new Alpaca(mock.getConfig());
@@ -21,7 +21,7 @@ describe("order resource", function () {
           direction: "asc",
           limit: 4,
           nested: false,
-          symbols: "AAPL"
+          symbols: "AAPL",
         })
       ).to.eventually.be.an("array");
     });

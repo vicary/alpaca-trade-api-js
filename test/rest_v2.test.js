@@ -1,10 +1,18 @@
 "use strict";
 
 const { expect, assert } = require("chai");
-const api = require("../dist/alpaca-trade-api");
+const { default: api } = require("../dist/alpaca-trade-api");
 const mock = require("./support/mock-server");
 
-const tradeKeys = ["ID", "Exchange", "Price", "Size", "Timestamp", "Conditions", "Tape"];
+const tradeKeys = [
+  "ID",
+  "Exchange",
+  "Price",
+  "Size",
+  "Timestamp",
+  "Conditions",
+  "Tape",
+];
 
 const quoteKeys = [
   "BidExchange",
@@ -202,7 +210,10 @@ describe("stock API", () => {
   });
 
   it("get multi latest trades", async () => {
-    const resp = await alpaca.getLatestTrades(["AAPL", "FB"], alpaca.configuration);
+    const resp = await alpaca.getLatestTrades(
+      ["AAPL", "FB"],
+      alpaca.configuration
+    );
 
     expect(resp.size).equal(2);
     for (const [s, t] of resp) {
@@ -220,7 +231,13 @@ describe("stock API", () => {
 
 const cryptoTradeKeys = ["Timestamp", "Price", "Size", "TakerSide", "ID"];
 
-const cryptoQuoteKeys = ["Timestamp", "BidPrice", "BidSize", "AskPrice", "AskSize"];
+const cryptoQuoteKeys = [
+  "Timestamp",
+  "BidPrice",
+  "BidSize",
+  "AskPrice",
+  "AskSize",
+];
 
 const cryptoBarKeys = [
   "Timestamp",
@@ -392,7 +409,13 @@ describe("options API", () => {
     const snapshot = snapshots[0];
     assert.equal(snapshot.Greeks.delta, 0.7521304109871954);
     assert.equal(snapshot.Greeks.gamma, 0.06241426404871288);
-    assert.equal(snapshot.LatestQuote.Timestamp, "2024-04-22T19:59:59.992734208Z");
-    assert.equal(snapshot.LatestTrade.Timestamp, "2024-04-22T19:57:32.589554432Z");
+    assert.equal(
+      snapshot.LatestQuote.Timestamp,
+      "2024-04-22T19:59:59.992734208Z"
+    );
+    assert.equal(
+      snapshot.LatestTrade.Timestamp,
+      "2024-04-22T19:57:32.589554432Z"
+    );
   });
 });

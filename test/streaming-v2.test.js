@@ -2,7 +2,7 @@
 
 const { expect } = require("chai");
 const { isEqual } = require("lodash");
-const alpacaApi = require("../dist/alpaca-trade-api");
+const { default: alpacaApi } = require("../dist/alpaca-trade-api");
 const mockServer = require("./support/mock-streaming");
 
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;

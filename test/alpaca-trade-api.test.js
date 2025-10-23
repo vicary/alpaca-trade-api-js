@@ -1,7 +1,7 @@
 "use strict";
 
 const expect = require("chai").expect;
-const Alpaca = require("../dist/alpaca-trade-api");
+const { default: Alpaca } = require("../dist/alpaca-trade-api");
 
 describe("alpaca-trade-api", function () {
   describe("configure", function () {
@@ -17,6 +17,8 @@ describe("alpaca-trade-api", function () {
         feed: "iex",
         optionFeed: "opra",
         verbose: false,
+        paper: false,
+        timeout: 10000,
       };
       const alpaca = new Alpaca(testConfig);
       expect(alpaca.configuration).to.deep.equal(testConfig);

@@ -26,8 +26,8 @@ module.exports = function createV1Beta1DataMock() {
         limit: joi.number().integer().min(0).max(50).optional(),
         page_token: joi.string().optional(),
         sort: joi.string().optional(),
-        includeContent: joi.bool().optional(),
-        excludeContentless: joi.bool().optional(),
+        includeContent: joi.boolean().optional(),
+        excludeContentless: joi.boolean().optional(),
       });
 
       let resp = { news: [], next_page_token: null };
@@ -74,7 +74,9 @@ module.exports = function createV1Beta1DataMock() {
         page_token: joi.string().optional(),
       });
       let resp = {
-        snapshots: { AAPL240426C00162500: options.snapshots["AAPL240426C00162500"] },
+        snapshots: {
+          AAPL240426C00162500: options.snapshots["AAPL240426C00162500"],
+        },
         next_page_token: null,
       };
       return resp;

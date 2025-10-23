@@ -1,3 +1,3 @@
-import Alpaca from "./alpaca-trade-api";
+import { default as Alpaca } from "./alpaca-trade-api";
+
 export default Alpaca;
-module.exports = Alpaca;

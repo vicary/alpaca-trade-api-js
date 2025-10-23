@@ -1,25 +1,40 @@
-require("dotenv").config();
+import "dotenv/config";
 
-const api = require("./api");
-const account = require("./resources/account");
-const position = require("./resources/position");
-const calendar = require("./resources/calendar");
-const clock = require("./resources/clock");
-const asset = require("./resources/asset");
-const order = require("./resources/order");
-const watchlist = require("./resources/watchlist");
+import api from "./api";
+import account from "./resources/account";
+import asset from "./resources/asset";
+import calendar from "./resources/calendar";
+import clock from "./resources/clock";
+import order from "./resources/order";
+import position from "./resources/position";
+import watchlist from "./resources/watchlist";
 
-const dataV2 = require("./resources/datav2/rest_v2");
-const entityV2 = require("./resources/datav2/entityv2");
-const crypto_websocket = require("./resources/datav2/crypto_websocket_v1beta3");
-const news_stream = require("./resources/datav2/news_websocket");
-const websockets_v2 = require("./resources/datav2/stock_websocket_v2");
-const option_stream = require("./resources/datav2/option_websocket_v1beta1");
+import * as crypto_websocket from "./resources/datav2/crypto_websocket_v1beta3";
+import * as entityV2 from "./resources/datav2/entityv2";
+import * as news_stream from "./resources/datav2/news_websocket";
+import * as option_stream from "./resources/datav2/option_websocket_v1beta1";
+import * as dataV2 from "./resources/datav2/rest_v2";
+import * as websockets_v2 from "./resources/datav2/stock_websocket_v2";
 
-const websockets = require("./resources/websockets");
+import * as websockets from "./resources/websockets";
 
-class Alpaca {
-  constructor(config = {}) {
+export type AlpacaOptions = {
+  baseUrl?: string;
+  dataBaseUrl?: string;
+  dataStreamUrl?: string;
+  keyId?: string;
+  secretKey?: string;
+  apiVersion?: string;
+  oauth?: string;
+  feed?: string;
+  optionFeed?: string;
+  verbose?: boolean;
+  timeout?: number;
+  paper?: boolean;
+};
+
+export default class Alpaca {
+  constructor(config: AlpacaOptions = {}) {
     this.configuration = {
       baseUrl:
         config.baseUrl ||
@@ -42,7 +57,8 @@ class Alpaca {
       oauth: config.oauth || process.env.APCA_API_OAUTH || "",
       feed: config.feed || "iex", // use 'sip' if you have PRO subscription
       optionFeed: config.optionFeed || "indicative", // use 'opra' if you have PRO subscription
-      verbose: config.verbose,
+      verbose: config.verbose ?? false,
+      paper: config.paper ?? false,
       timeout: config.timeout || 10000,
     };
     this.data_ws = new websockets.AlpacaStreamClient({
@@ -51,9 +67,6 @@ class Alpaca {
       secretKey: this.configuration.secretKey,
       oauth: this.configuration.oauth,
     });
-    this.data_ws.STATE = websockets.STATE;
-    this.data_ws.EVENT = websockets.EVENT;
-    this.data_ws.ERROR = websockets.ERROR;
 
     this.trade_ws = new websockets.AlpacaStreamClient({
       url: this.configuration.baseUrl,
@@ -61,9 +74,6 @@ class Alpaca {
       secretKey: this.configuration.secretKey,
       oauth: this.configuration.oauth,
     });
-    this.trade_ws.STATE = websockets.STATE;
-    this.trade_ws.EVENT = websockets.EVENT;
-    this.trade_ws.ERROR = websockets.ERROR;
 
     this.data_stream_v2 = new websockets_v2.AlpacaStocksClient({
       url: this.configuration.dataStreamUrl,
@@ -98,11 +108,40 @@ class Alpaca {
     });
   }
 
+  configuration: Required<AlpacaOptions>;
+
+  data_ws: websockets.AlpacaStreamClient;
+
+  trade_ws: websockets.AlpacaStreamClient;
+
+  data_stream_v2: websockets_v2.AlpacaStocksClient;
+
+  adjustment: typeof dataV2.Adjustment;
+
+  timeframeUnit: typeof entityV2.TimeFrameUnit;
+
+  crypto_stream_v1beta3: crypto_websocket.AlpacaCryptoClient;
+
+  news_stream: news_stream.AlpacaNewsCLient;
+
+  option_stream: option_stream.AlpacaOptionClient;
+
   // Helper methods
   httpRequest = api.httpRequest.bind(this);
-  dataHttpRequest = api.dataHttpRequest;
-  sendRequest(endpoint, queryParams, body, method) {
-    return api.sendRequest(this.httpRequest, endpoint, queryParams, body, method);
+  dataHttpRequest = api.dataHttpRequest.bind(this);
+  sendRequest(
+    endpoint: string,
+    queryParams: Record<string, unknown>,
+    body: unknown,
+    method: string
+  ) {
+    return api.sendRequest(
+      this.httpRequest,
+      endpoint,
+      queryParams,
+      body,
+      method
+    );
   }
 
   // Account
@@ -138,106 +177,170 @@ class Alpaca {
   cancelAllOrders = order.cancelAll;
 
   //DataV2
-  getTradesV2(symbol, options, config = this.configuration) {
+  getTradesV2(
+    symbol: string,
+    options: dataV2.GetTradesParams,
+    config = this.configuration
+  ) {
     return dataV2.getTrades(symbol, options, config);
   }
-  getMultiTradesV2(symbols, options, config = this.configuration) {
+  getMultiTradesV2(
+    symbols: string[],
+    options: dataV2.GetTradesParams,
+    config = this.configuration
+  ) {
     return dataV2.getMultiTrades(symbols, options, config);
   }
-  getMultiTradesAsyncV2(symbols, options, config = this.configuration) {
+  getMultiTradesAsyncV2(
+    symbols: string[],
+    options: dataV2.GetTradesParams,
+    config = this.configuration
+  ) {
     return dataV2.getMultiTradesAsync(symbols, options, config);
   }
-  getQuotesV2(symbol, options, config = this.configuration) {
+  getQuotesV2(
+    symbol: string,
+    options: dataV2.GetQuotesParams,
+    config = this.configuration
+  ) {
     return dataV2.getQuotes(symbol, options, config);
   }
-  getMultiQuotesV2(symbols, options, config = this.configuration) {
+  getMultiQuotesV2(
+    symbols: string[],
+    options: dataV2.GetQuotesParams,
+    config = this.configuration
+  ) {
     return dataV2.getMultiQuotes(symbols, options, config);
   }
-  getMultiQuotesAsyncV2(symbols, options, config = this.configuration) {
+  getMultiQuotesAsyncV2(
+    symbols: string[],
+    options: dataV2.GetQuotesParams,
+    config = this.configuration
+  ) {
     return dataV2.getMultiQuotesAsync(symbols, options, config);
   }
-  getBarsV2(symbol, options, config = this.configuration) {
+  getBarsV2(
+    symbol: string,
+    options: dataV2.GetBarsParams,
+    config = this.configuration
+  ) {
     return dataV2.getBars(symbol, options, config);
   }
-  getMultiBarsV2(symbols, options, config = this.configuration) {
+  getMultiBarsV2(
+    symbols: string[],
+    options: dataV2.GetBarsParams,
+    config = this.configuration
+  ) {
     return dataV2.getMultiBars(symbols, options, config);
   }
-  getMultiBarsAsyncV2(symbols, options, config = this.configuration) {
+  getMultiBarsAsyncV2(
+    symbols: string[],
+    options: dataV2.GetBarsParams,
+    config = this.configuration
+  ) {
     return dataV2.getMultiBarsAsync(symbols, options, config);
   }
-  getLatestTrade(symbol, config = this.configuration) {
+  getLatestTrade(symbol: string, config = this.configuration) {
     return dataV2.getLatestTrade(symbol, config);
   }
-  getLatestTrades(symbols, config = this.configuration) {
+  getLatestTrades(symbols: string[], config = this.configuration) {
     return dataV2.getLatestTrades(symbols, config);
   }
-  getLatestQuote(symbol, config = this.configuration) {
+  getLatestQuote(symbol: string, config = this.configuration) {
     return dataV2.getLatestQuote(symbol, config);
   }
-  getLatestQuotes(symbols, config = this.configuration) {
+  getLatestQuotes(symbols: string[], config = this.configuration) {
     return dataV2.getLatestQuotes(symbols, config);
   }
-  getLatestBar(symbol, config = this.configuration) {
+  getLatestBar(symbol: string, config = this.configuration) {
     return dataV2.getLatestBar(symbol, config);
   }
-  getLatestBars(symbols, config = this.configuration) {
+  getLatestBars(symbols: string[], config = this.configuration) {
     return dataV2.getLatestBars(symbols, config);
   }
-  getSnapshot(symbol, config = this.configuration) {
+  getSnapshot(symbol: string, config = this.configuration) {
     return dataV2.getSnapshot(symbol, config);
   }
-  getSnapshots(symbols, config = this.configuration) {
+  getSnapshots(symbols: string[], config = this.configuration) {
     return dataV2.getSnapshots(symbols, config);
   }
-  getCryptoTrades(symbols, options, config = this.configuration) {
+  getCryptoTrades(
+    symbols: string[],
+    options: dataV2.GetCryptoTradesParams,
+    config = this.configuration
+  ) {
     return dataV2.getCryptoTrades(symbols, options, config);
   }
-  getCryptoQuotes(symbols, options, config = this.configuration) {
+  getCryptoQuotes(
+    symbols: string[],
+    options: dataV2.GetCryptoQuotesParams,
+    config = this.configuration
+  ) {
     return dataV2.getCryptoQuotes(symbols, options, config);
   }
-  getCryptoBars(symbols, options, config = this.configuration) {
+  getCryptoBars(
+    symbols: string[],
+    options: dataV2.GetCryptoBarsParams,
+    config = this.configuration
+  ) {
     return dataV2.getCryptoBars(symbols, options, config);
   }
-  getLatestCryptoTrades(symbols, config = this.configuration) {
+  getLatestCryptoTrades(symbols: string[], config = this.configuration) {
     return dataV2.getLatestCryptoTrades(symbols, config);
   }
-  getLatestCryptoQuotes(symbols, config = this.configuration) {
+  getLatestCryptoQuotes(symbols: string[], config = this.configuration) {
     return dataV2.getLatestCryptoQuotes(symbols, config);
   }
-  getLatestCryptoBars(symbols, config = this.configuration) {
+  getLatestCryptoBars(symbols: string[], config = this.configuration) {
     return dataV2.getLatestCryptoBars(symbols, config);
   }
-  getCryptoSnapshots(symbols, config = this.configuration) {
+  getCryptoSnapshots(symbols: string[], config = this.configuration) {
     return dataV2.getCryptoSnapshots(symbols, config);
   }
-  getCryptoOrderbooks(symbols, config = this.configuration) {
+  getCryptoOrderbooks(symbols: string[], config = this.configuration) {
     return dataV2.getLatestCryptoOrderbooks(symbols, config);
   }
-  getOptionBars(symbols, options, config = this.configuration) {
+  getOptionBars(
+    symbols: string[],
+    options: dataV2.GetOptionBarsParams,
+    config = this.configuration
+  ) {
     return dataV2.getMultiOptionBars(symbols, options, config);
   }
-  getOptionTrades(symbols, options, config = this.configuration) {
+  getOptionTrades(
+    symbols: string[],
+    options: dataV2.GetOptionTradesParams,
+    config = this.configuration
+  ) {
     return dataV2.getMultiOptionTrades(symbols, options, config);
   }
-  getOptionLatestTrades(symbols, config = this.configuration) {
+  getOptionLatestTrades(symbols: string[], config = this.configuration) {
     return dataV2.getLatestOptionTrades(symbols, config);
   }
-  getOptionLatestQuotes(symbols, config = this.configuration) {
+  getOptionLatestQuotes(symbols: string[], config = this.configuration) {
     return dataV2.getLatestOptionQuotes(symbols, config);
   }
-  getOptionSnapshots(symbols, config = this.configuration) {
+  getOptionSnapshots(symbols: string[], config = this.configuration) {
     return dataV2.getOptionSnapshots(symbols, config);
   }
-  getOptionChain(underlying_symbol, options, config = this.configuration) {
+  getOptionChain(
+    underlying_symbol: string,
+    options: dataV2.GetQuotesParams,
+    config = this.configuration
+  ) {
     return dataV2.getOptionChain(underlying_symbol, options, config);
   }
-  getCorporateActions(symbols, options, config = this.configuration) {
+  getCorporateActions(
+    symbols: string[],
+    options: dataV2.GetQuotesParams,
+    config = this.configuration
+  ) {
     return dataV2.getCorporateActions(symbols, options, config);
   }
-  getNews(options, config = this.configuration) {
+  getNews(options: dataV2.GetNewsParams, config = this.configuration) {
     return dataV2.getNews(options, config);
   }
-  newTimeframe(amount, unit) {
+  newTimeframe(amount: number, unit: entityV2.TimeFrameUnit) {
     return entityV2.NewTimeframe(amount, unit);
   }
 
@@ -250,5 +353,3 @@ class Alpaca {
   deleteWatchlist = watchlist.deleteWatchlist;
   deleteFromWatchlist = watchlist.deleteFromWatchlist;
 }
-
-module.exports = Alpaca;

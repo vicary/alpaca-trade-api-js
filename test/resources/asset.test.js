@@ -2,7 +2,7 @@
 
 const expect = require("chai").expect;
 const mock = require("../support/mock-server");
-const Alpaca = require("../../dist/alpaca-trade-api");
+const { default: Alpaca } = require("../../dist/alpaca-trade-api");
 const alpaca = new Alpaca(mock.getConfig());
 
 describe("asset resource", function () {
