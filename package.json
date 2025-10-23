@@ -1,11 +1,11 @@
 {
   "name": "@vicary/alpaca-trade-api",
-  "version": "3.1.12",
+  "version": "3.1.13-alpha.0",
   "description": "Javascript library for the Alpaca Trade API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "engines": {
-    "node": ">=16.9",
+    "node": ">=17.5",
     "npm": ">=6"
   },
   "scripts": {
@@ -34,7 +34,6 @@
   },
   "homepage": "https://alpaca.markets/",
   "dependencies": {
-    "axios": "^1.12.2",
     "dotenv": "^6.2.0",
     "eslint": "^8.57.0",
     "events": "^3.2.0",

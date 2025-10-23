@@ -14,7 +14,7 @@
     "alwaysStrict": true,
     "skipLibCheck": true,
     "types": ["node"],
-    "lib": ["ES2022.Object"],
+    "lib": ["DOM", "DOM.Iterable", "ES2022.Object"]
   },
   "include": ["./lib/**/*.ts", "./lib/**/*.js"],
   "exclude": ["./dist/**/*"]

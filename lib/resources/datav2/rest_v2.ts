@@ -1,4 +1,3 @@
-import axios, { AxiosResponse } from "axios";
 import {
   AlpacaBar,
   AlpacaBarV2,
@@ -63,16 +62,18 @@ export type HttpRequestConfig = {
   keyId: string;
   secretKey: string;
   oauth: string;
-  timeout?: number;
   signal?: AbortSignal;
 };
 
-export function dataV2HttpRequest(
+export async function dataV2HttpRequest(
   url: string,
-  queryParams: Record<string, unknown>,
+  queryParams: Record<
+    string,
+    boolean | string | string[] | number | null | undefined
+  >,
   config: HttpRequestConfig
-): Promise<AxiosResponse> {
-  const { dataBaseUrl, keyId, secretKey, oauth, signal, timeout } = config;
+) {
+  const { dataBaseUrl, keyId, secretKey, oauth, signal } = config;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "Accept-Encoding": "gzip",
@@ -84,24 +85,36 @@ export function dataV2HttpRequest(
     headers["Authorization"] = "Bearer " + oauth;
   }
 
-  return axios
-    .get(`${dataBaseUrl}${url}`, {
-      params: queryParams,
-      headers: headers,
-      signal: signal,
-      timeout: timeout,
-    })
-    .catch((err) => {
-      if (!err.response) {
-        throw err;
-      }
+  const urlObj = new URL(`${dataBaseUrl}${url}`);
 
-      throw new Error(
-        `code: ${err.response?.status || err.statusCode}, message: ${
-          err.response?.data.message
-        }`
-      );
-    });
+  for (const [k, v] of Object.entries(queryParams)) {
+    if (v == null) continue;
+
+    urlObj.searchParams.append(k, v.toString());
+  }
+
+  const response = await fetch(urlObj, {
+    method: "GET",
+    headers: headers,
+    signal: signal,
+  });
+
+  const responseText = await response.text();
+  const responseJson = JSON.parse(responseText);
+
+  if (!response.ok) {
+    throw new Error(
+      `code: ${responseJson.status || response.status}, message: ${
+        responseJson.message
+      }`
+    );
+  }
+
+  if (typeof responseJson !== "object" || responseJson === null) {
+    throw new Error("invalid response format");
+  }
+
+  return responseJson;
 }
 
 function getQueryLimit(
@@ -132,7 +145,7 @@ export async function* getDataV2(
   options: PaginationOptions,
   config: HttpRequestConfig
 ) {
-  let pageToken: string | null = null;
+  let pageToken: string | undefined = undefined;
   let received = 0;
   const pageLimit = options.pageLimit
     ? Math.min(options.pageLimit, V2_MAX_LIMIT)
@@ -154,7 +167,7 @@ export async function* getDataV2(
       limit = null;
     }
 
-    const resp: AxiosResponse = await dataV2HttpRequest(
+    const resp = await dataV2HttpRequest(
       path,
       { ...options, limit, page_token: pageToken },
       config
@@ -164,14 +177,14 @@ export async function* getDataV2(
       throw new Error(config.signal.reason ?? "request aborted");
     }
 
-    const items = resp.data[endpoint] || [];
+    const items = resp[endpoint] || [];
 
     for (const item of items) {
       yield item;
     }
 
     received += items.length;
-    pageToken = resp.data.next_page_token;
+    pageToken = resp.next_page_token;
 
     if (!pageToken) {
       break;
@@ -206,14 +219,14 @@ export async function* getMultiDataV2(
       page_token: pageToken,
     };
     const resp = await dataV2HttpRequest(`${url}${endpoint}`, params, config);
-    const items = resp.data[endpoint];
+    const items = resp[endpoint];
     for (const symbol in items) {
       for (const data of items[symbol]) {
         received++;
         yield { symbol: symbol, data: data };
       }
     }
-    pageToken = resp.data.next_page_token;
+    pageToken = resp.next_page_token;
     if (!pageToken) {
       break;
     }
@@ -409,7 +422,7 @@ export async function getLatestTrade(
     {},
     config
   );
-  return AlpacaTradeV2(resp.data.trade);
+  return AlpacaTradeV2(resp.trade);
 }
 
 export async function getLatestTrades(
@@ -421,7 +434,7 @@ export async function getLatestTrades(
     { symbols: symbols.join(",") },
     config
   );
-  const multiLatestTrades = resp.data.trades;
+  const multiLatestTrades = resp.trades;
   const multiLatestTradesResp = new Map<string, AlpacaTrade>();
   for (const symbol in multiLatestTrades) {
     multiLatestTradesResp.set(
@@ -441,7 +454,7 @@ export async function getLatestQuote(
     {},
     config
   );
-  return AlpacaQuoteV2(resp.data.quote);
+  return AlpacaQuoteV2(resp.quote);
 }
 
 export async function getLatestQuotes(
@@ -453,7 +466,7 @@ export async function getLatestQuotes(
     { symbols: symbols.join(",") },
     config
   );
-  const multiLatestQuotes = resp.data.quotes;
+  const multiLatestQuotes = resp.quotes;
   const multiLatestQuotesResp = new Map<string, AlpacaQuote>();
   for (const symbol in multiLatestQuotes) {
     multiLatestQuotesResp.set(
@@ -473,7 +486,7 @@ export async function getLatestBar(
     {},
     config
   );
-  return AlpacaBarV2(resp.data.bar);
+  return AlpacaBarV2(resp.bar);
 }
 
 export async function getLatestBars(
@@ -485,7 +498,7 @@ export async function getLatestBars(
     { symbols: symbols.join(",") },
     config
   );
-  const multiLatestBars = resp.data.bars;
+  const multiLatestBars = resp.bars;
   const multiLatestBarsResp = new Map<string, AlpacaBar>();
   for (const symbol in multiLatestBars) {
     multiLatestBarsResp.set(
@@ -506,7 +519,7 @@ export async function getSnapshot(
     config
   );
 
-  return AlpacaSnapshotV2(resp.data);
+  return AlpacaSnapshotV2(resp);
 }
 
 export async function getSnapshots(
@@ -518,7 +531,7 @@ export async function getSnapshots(
     {},
     config
   );
-  const result = Object.entries(resp.data as Map<string, unknown>).map(
+  const result = Object.entries(resp as Map<string, unknown>).map(
     ([key, val]) => {
       return AlpacaSnapshotV2({ symbol: key, ...val });
     }
@@ -624,7 +637,7 @@ export async function getLatestCryptoBars(
     config
   );
 
-  const multiLatestCryptoBars = resp.data.bars;
+  const multiLatestCryptoBars = resp.bars;
   const result = new Map<string, CryptoBar>();
   for (const symbol in multiLatestCryptoBars) {
     const bar = multiLatestCryptoBars[symbol];
@@ -645,7 +658,7 @@ export async function getLatestCryptoTrades(
     config
   );
 
-  const multiLatestCryptoTrades = resp.data.trades;
+  const multiLatestCryptoTrades = resp.trades;
   const result = new Map<string, CryptoTrade>();
   for (const symbol in multiLatestCryptoTrades) {
     const trade = multiLatestCryptoTrades[symbol];
@@ -666,7 +679,7 @@ export async function getLatestCryptoQuotes(
     config
   );
 
-  const multiLatestCryptoQuotes = resp.data.quotes;
+  const multiLatestCryptoQuotes = resp.quotes;
   const result = new Map<string, CryptoQuote>();
   for (const symbol in multiLatestCryptoQuotes) {
     const quote = multiLatestCryptoQuotes[symbol];
@@ -686,7 +699,7 @@ export async function getCryptoSnapshots(
     params,
     config
   );
-  const snapshots = resp.data.snapshots;
+  const snapshots = resp.snapshots;
   const result = new Map<string, CryptoSnapshot>();
   for (const symbol in snapshots) {
     const snapshot = snapshots[symbol];
@@ -705,7 +718,7 @@ export async function getLatestCryptoOrderbooks(
     params,
     config
   );
-  const orderbooks = resp.data.orderbooks;
+  const orderbooks = resp.orderbooks;
   const result = new Map<string, CryptoOrderbook>();
   for (const symbol in orderbooks) {
     const orderbook = orderbooks[symbol];
@@ -785,14 +798,14 @@ export async function getNews(
       break;
     }
 
-    const resp: AxiosResponse = await dataV2HttpRequest(
+    const resp = await dataV2HttpRequest(
       "/v1beta1/news",
       { ...params, limit: limit, page_token: pageToken },
       config
     );
-    resp.data.news.forEach((n: RawAlpacaNews) => result.push(AlpacaNews(n)));
-    received += resp.data.news.length;
-    pageToken = resp.data.next_page_token;
+    resp.news.forEach((n: RawAlpacaNews) => result.push(AlpacaNews(n)));
+    received += resp.news.length;
+    pageToken = resp.next_page_token;
     if (!pageToken) {
       break;
     }
@@ -900,7 +913,7 @@ export async function getLatestOptionTrades(
     { symbols: symbols.join(",") },
     config
   );
-  const multiLatestTrades = resp.data.trades;
+  const multiLatestTrades = resp.trades;
   const multiLatestTradesResp = new Map<string, AlpacaOptionTrade>();
   for (const symbol in multiLatestTrades) {
     multiLatestTradesResp.set(
@@ -920,7 +933,7 @@ export async function getLatestOptionQuotes(
     { symbols: symbols.join(",") },
     config
   );
-  const multiLatestQuotes = resp.data.quotes;
+  const multiLatestQuotes = resp.quotes;
   const multiLatestQuotesResp = new Map<string, AlpacaOptionQuote>();
   for (const symbol in multiLatestQuotes) {
     multiLatestQuotesResp.set(
@@ -940,7 +953,7 @@ export async function getOptionSnapshots(
     {},
     config
   );
-  const result = Object.entries(resp.data.snapshots as Map<string, any>).map(
+  const result = Object.entries(resp.snapshots as Map<string, any>).map(
     ([key, val]) => {
       return AlpacaOptionSnapshotV1Beta1({ Symbol: key, ...val });
     }
@@ -994,7 +1007,7 @@ export async function getOptionChain(
       config
     );
 
-    const res = Object.entries(resp.data.snapshots as Map<string, any>).map(
+    const res = Object.entries(resp.snapshots as Map<string, any>).map(
       ([key, val]) => {
         return AlpacaOptionSnapshotV1Beta1({ Symbol: key, ...val });
       }
@@ -1002,7 +1015,7 @@ export async function getOptionChain(
     received = received + res.length;
     result.push(...res);
 
-    pageToken = resp.data.next_page_token;
+    pageToken = resp.next_page_token;
     if (!pageToken) {
       break;
     }
@@ -1050,16 +1063,16 @@ export async function getCorporateActions(
       break;
     }
 
-    const resp: AxiosResponse = await dataV2HttpRequest(
+    const resp = await dataV2HttpRequest(
       `/v1beta1/corporate-actions`,
       { ...params, limit: limit, page_token: pageToken },
       config
     );
-    const cas = convertCorporateActions(resp.data.corporate_actions);
+    const cas = convertCorporateActions(resp.corporate_actions);
     result = mergeCorporateActions(result, cas);
     received += getCorporateActionsSize(cas);
 
-    pageToken = resp.data.next_page_token;
+    pageToken = resp.next_page_token;
     if (!pageToken) {
       break;
     }
