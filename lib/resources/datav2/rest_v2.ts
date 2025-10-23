@@ -173,13 +173,12 @@ export async function* getDataV2(
       config
     );
 
-    if (config.signal?.aborted) {
-      throw new Error(config.signal.reason ?? "request aborted");
-    }
-
     const items = resp[endpoint] || [];
 
     for (const item of items) {
+      // Allow signal to be cancelled during item emission, on top of fetch.
+      config.signal?.throwIfAborted();
+
       yield item;
     }
 
