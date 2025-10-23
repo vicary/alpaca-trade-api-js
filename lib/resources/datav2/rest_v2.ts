@@ -1,34 +1,34 @@
 import axios, { AxiosResponse } from "axios";
 import {
-  AlpacaTradeV2,
+  AlpacaBar,
   AlpacaBarV2,
-  AlpacaQuoteV2,
-  AlpacaSnapshotV2,
-  AlpacaCryptoTrade,
-  AlpacaCryptoQuote,
   AlpacaCryptoBar,
   AlpacaCryptoOrderbook,
-  CryptoQuote,
-  CryptoTrade,
-  CryptoBar,
-  CryptoSnapshot,
-  CryptoOrderbook,
-  AlpacaSnapshot,
-  AlpacaQuote,
-  AlpacaTrade,
-  AlpacaBar,
+  AlpacaCryptoQuote,
   AlpacaCryptoSnapshot,
+  AlpacaCryptoTrade,
   AlpacaNews,
-  RawAlpacaNews,
   AlpacaOptionBar,
   AlpacaOptionBarV1Beta1,
-  AlpacaOptionTrade,
-  AlpacaOptionTradeV1Beta1,
   AlpacaOptionQuote,
   AlpacaOptionQuoteV1Beta1,
   AlpacaOptionSnapshot,
   AlpacaOptionSnapshotV1Beta1,
+  AlpacaOptionTrade,
+  AlpacaOptionTradeV1Beta1,
+  AlpacaQuote,
+  AlpacaQuoteV2,
+  AlpacaSnapshot,
+  AlpacaSnapshotV2,
+  AlpacaTrade,
+  AlpacaTradeV2,
   CorporateActions,
+  CryptoBar,
+  CryptoOrderbook,
+  CryptoQuote,
+  CryptoSnapshot,
+  CryptoTrade,
+  RawAlpacaNews,
   convertCorporateActions,
   getCorporateActionsSize,
   mergeCorporateActions,
@@ -53,13 +53,27 @@ export enum TYPE {
   SNAPSHOTS = "snapshots",
 }
 
+export type PaginationOptions = {
+  limit?: number;
+  pageLimit?: number;
+};
+
+export type HttpRequestConfig = {
+  dataBaseUrl: string;
+  keyId: string;
+  secretKey: string;
+  oauth: string;
+  timeout?: number;
+  signal?: AbortSignal;
+};
+
 export function dataV2HttpRequest(
   url: string,
-  queryParams: any,
-  config: any
-): Promise<AxiosResponse<any>> {
-  const { dataBaseUrl, keyId, secretKey, oauth, timeout } = config;
-  const headers: any = {
+  queryParams: Record<string, unknown>,
+  config: HttpRequestConfig
+): Promise<AxiosResponse> {
+  const { dataBaseUrl, keyId, secretKey, oauth, signal, timeout } = config;
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "Accept-Encoding": "gzip",
   };
@@ -69,17 +83,19 @@ export function dataV2HttpRequest(
   } else {
     headers["Authorization"] = "Bearer " + oauth;
   }
+
   return axios
     .get(`${dataBaseUrl}${url}`, {
       params: queryParams,
       headers: headers,
+      signal: signal,
       timeout: timeout,
     })
-    .catch((err: any) => {
+    .catch((err) => {
       if (!err.response) {
         throw err;
       }
-      
+
       throw new Error(
         `code: ${err.response?.status || err.statusCode}, message: ${
           err.response?.data.message
@@ -88,7 +104,11 @@ export function dataV2HttpRequest(
     });
 }
 
-function getQueryLimit(totalLimit: number, pageLimit: number, received: number): number {
+function getQueryLimit(
+  totalLimit: number,
+  pageLimit: number,
+  received: number
+): number {
   let limit = 0;
   if (pageLimit !== 0) {
     limit = pageLimit;
@@ -109,9 +129,9 @@ function getQueryLimit(totalLimit: number, pageLimit: number, received: number):
 export async function* getDataV2(
   endpoint: TYPE,
   path: string,
-  options: any,
-  config: any
-): AsyncGenerator<any, void, unknown> {
+  options: PaginationOptions,
+  config: HttpRequestConfig
+) {
   let pageToken: string | null = null;
   let received = 0;
   const pageLimit = options.pageLimit
@@ -134,11 +154,15 @@ export async function* getDataV2(
       limit = null;
     }
 
-    const resp: AxiosResponse<any> = await dataV2HttpRequest(
+    const resp: AxiosResponse = await dataV2HttpRequest(
       path,
       { ...options, limit, page_token: pageToken },
       config
     );
+
+    if (config.signal?.aborted) {
+      throw new Error(config.signal.reason ?? "request aborted");
+    }
 
     const items = resp.data[endpoint] || [];
 
@@ -159,8 +183,8 @@ export async function* getMultiDataV2(
   symbols: Array<string>,
   url: string,
   endpoint: string,
-  options: any,
-  config: any
+  options: PaginationOptions,
+  config: HttpRequestConfig
 ): AsyncGenerator<{ symbol: string; data: any }, void, unknown> {
   let pageToken: string | null = null;
   let received = 0;
@@ -175,7 +199,7 @@ export async function* getMultiDataV2(
       break;
     }
 
-    const params: any = {
+    const params = {
       ...options,
       symbols: symbols.join(","),
       limit: limit,
@@ -210,7 +234,7 @@ export interface GetTradesParams {
 export async function* getTrades(
   symbol: string,
   options: GetTradesParams,
-  config: any
+  config: HttpRequestConfig
 ): AsyncGenerator<AlpacaTrade, void, unknown> {
   const trades = getDataV2(
     TYPE.TRADES,
@@ -226,7 +250,7 @@ export async function* getTrades(
 export async function getMultiTrades(
   symbols: Array<string>,
   options: GetTradesParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaTrade[]>> {
   const multiTrades = getMultiTradesAsync(symbols, options, config);
   const trades = new Map<string, Array<AlpacaTrade>>();
@@ -240,7 +264,7 @@ export async function getMultiTrades(
 export async function* getMultiTradesAsync(
   symbols: Array<string>,
   options: GetTradesParams,
-  config: any
+  config: HttpRequestConfig
 ): AsyncGenerator<AlpacaTrade, void, unknown> {
   const multiTrades = getMultiDataV2(
     symbols,
@@ -269,7 +293,7 @@ export interface GetQuotesParams {
 export async function* getQuotes(
   symbol: string,
   options: GetQuotesParams,
-  config: any
+  config: HttpRequestConfig
 ): AsyncGenerator<AlpacaQuote, void, unknown> {
   const quotes = getDataV2(
     TYPE.QUOTES,
@@ -285,7 +309,7 @@ export async function* getQuotes(
 export async function getMultiQuotes(
   symbols: Array<string>,
   options: GetQuotesParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaQuote[]>> {
   const multiQuotes = getMultiQuotesAsync(symbols, options, config);
   const quotes = new Map<string, Array<AlpacaQuote>>();
@@ -299,7 +323,7 @@ export async function getMultiQuotes(
 export async function* getMultiQuotesAsync(
   symbols: Array<string>,
   options: GetQuotesParams,
-  config: any
+  config: HttpRequestConfig
 ): AsyncGenerator<AlpacaQuote, void, unknown> {
   const multiQuotes = getMultiDataV2(
     symbols,
@@ -330,9 +354,14 @@ export interface GetBarsParams {
 export async function* getBars(
   symbol: string,
   options: GetBarsParams,
-  config: any
+  config: HttpRequestConfig
 ): AsyncGenerator<AlpacaBar, void, unknown> {
-  const bars = getDataV2(TYPE.BARS, `/v2/stocks/${symbol}/${TYPE.BARS}`, options, config);
+  const bars = getDataV2(
+    TYPE.BARS,
+    `/v2/stocks/${symbol}/${TYPE.BARS}`,
+    options,
+    config
+  );
 
   for await (const bar of bars || []) {
     yield AlpacaBarV2(bar);
@@ -342,7 +371,7 @@ export async function* getBars(
 export async function getMultiBars(
   symbols: Array<string>,
   options: GetBarsParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaBar[]>> {
   const multiBars = getMultiBarsAsync(symbols, options, config);
   const bars = new Map<string, Array<AlpacaBar>>();
@@ -356,23 +385,36 @@ export async function getMultiBars(
 export async function* getMultiBarsAsync(
   symbols: Array<string>,
   options: GetBarsParams,
-  config: any
+  config: HttpRequestConfig
 ): AsyncGenerator<AlpacaBar, void, unknown> {
-  const multiBars = getMultiDataV2(symbols, "/v2/stocks/", TYPE.BARS, options, config);
+  const multiBars = getMultiDataV2(
+    symbols,
+    "/v2/stocks/",
+    TYPE.BARS,
+    options,
+    config
+  );
   for await (const b of multiBars) {
     b.data = { ...b.data, S: b.symbol };
     yield AlpacaBarV2(b.data);
   }
 }
 
-export async function getLatestTrade(symbol: string, config: any): Promise<AlpacaTrade> {
-  const resp = await dataV2HttpRequest(`/v2/stocks/${symbol}/trades/latest`, {}, config);
+export async function getLatestTrade(
+  symbol: string,
+  config: HttpRequestConfig
+): Promise<AlpacaTrade> {
+  const resp = await dataV2HttpRequest(
+    `/v2/stocks/${symbol}/trades/latest`,
+    {},
+    config
+  );
   return AlpacaTradeV2(resp.data.trade);
 }
 
 export async function getLatestTrades(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaTrade>> {
   const resp = await dataV2HttpRequest(
     `/v2/stocks/${TYPE.TRADES}/latest`,
@@ -390,14 +432,21 @@ export async function getLatestTrades(
   return multiLatestTradesResp;
 }
 
-export async function getLatestQuote(symbol: string, config: any): Promise<AlpacaQuote> {
-  const resp = await dataV2HttpRequest(`/v2/stocks/${symbol}/quotes/latest`, {}, config);
+export async function getLatestQuote(
+  symbol: string,
+  config: HttpRequestConfig
+): Promise<AlpacaQuote> {
+  const resp = await dataV2HttpRequest(
+    `/v2/stocks/${symbol}/quotes/latest`,
+    {},
+    config
+  );
   return AlpacaQuoteV2(resp.data.quote);
 }
 
 export async function getLatestQuotes(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaQuote>> {
   const resp = await dataV2HttpRequest(
     `/v2/stocks/${TYPE.QUOTES}/latest`,
@@ -415,14 +464,21 @@ export async function getLatestQuotes(
   return multiLatestQuotesResp;
 }
 
-export async function getLatestBar(symbol: string, config: any): Promise<AlpacaBar> {
-  const resp = await dataV2HttpRequest(`/v2/stocks/${symbol}/bars/latest`, {}, config);
+export async function getLatestBar(
+  symbol: string,
+  config: HttpRequestConfig
+): Promise<AlpacaBar> {
+  const resp = await dataV2HttpRequest(
+    `/v2/stocks/${symbol}/bars/latest`,
+    {},
+    config
+  );
   return AlpacaBarV2(resp.data.bar);
 }
 
 export async function getLatestBars(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaBar>> {
   const resp = await dataV2HttpRequest(
     `/v2/stocks/${TYPE.BARS}/latest`,
@@ -440,24 +496,33 @@ export async function getLatestBars(
   return multiLatestBarsResp;
 }
 
-export async function getSnapshot(symbol: string, config: any): Promise<AlpacaSnapshot> {
-  const resp = await dataV2HttpRequest(`/v2/stocks/${symbol}/snapshot`, {}, config);
+export async function getSnapshot(
+  symbol: string,
+  config: HttpRequestConfig
+): Promise<AlpacaSnapshot> {
+  const resp = await dataV2HttpRequest(
+    `/v2/stocks/${symbol}/snapshot`,
+    {},
+    config
+  );
 
   return AlpacaSnapshotV2(resp.data);
 }
 
 export async function getSnapshots(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<AlpacaSnapshot[]> {
   const resp = await dataV2HttpRequest(
     `/v2/stocks/snapshots?symbols=${symbols.join(",")}`,
     {},
     config
   );
-  const result = Object.entries(resp.data as Map<string, any>).map(([key, val]) => {
-    return AlpacaSnapshotV2({ symbol: key, ...val });
-  });
+  const result = Object.entries(resp.data as Map<string, unknown>).map(
+    ([key, val]) => {
+      return AlpacaSnapshotV2({ symbol: key, ...val });
+    }
+  );
   return result;
 }
 
@@ -472,7 +537,7 @@ export interface GetCryptoTradesParams {
 export async function getCryptoTrades(
   symbols: string[],
   options: GetCryptoTradesParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, CryptoTrade[]>> {
   const cryptoTrades = getMultiDataV2(
     symbols,
@@ -501,7 +566,7 @@ export interface GetCryptoQuotesParams {
 export async function getCryptoQuotes(
   symbols: string[],
   options: GetCryptoQuotesParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, CryptoQuote[]>> {
   const cryptoQuotes = getMultiDataV2(
     symbols,
@@ -531,7 +596,7 @@ export interface GetCryptoBarsParams {
 export async function getCryptoBars(
   symbols: string[],
   options: GetCryptoBarsParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, CryptoBar[]>> {
   const cryptoBars = getMultiDataV2(
     symbols,
@@ -550,10 +615,14 @@ export async function getCryptoBars(
 
 export async function getLatestCryptoBars(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, CryptoBar>> {
   const params = { symbols: symbols.join(",") };
-  const resp = await dataV2HttpRequest(`/v1beta3/crypto/us/latest/bars`, params, config);
+  const resp = await dataV2HttpRequest(
+    `/v1beta3/crypto/us/latest/bars`,
+    params,
+    config
+  );
 
   const multiLatestCryptoBars = resp.data.bars;
   const result = new Map<string, CryptoBar>();
@@ -567,7 +636,7 @@ export async function getLatestCryptoBars(
 
 export async function getLatestCryptoTrades(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, CryptoTrade>> {
   const params = { symbols: symbols.join(",") };
   const resp = await dataV2HttpRequest(
@@ -588,7 +657,7 @@ export async function getLatestCryptoTrades(
 
 export async function getLatestCryptoQuotes(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, CryptoQuote>> {
   const params = { symbols: symbols.join(",") };
   const resp = await dataV2HttpRequest(
@@ -609,10 +678,14 @@ export async function getLatestCryptoQuotes(
 
 export async function getCryptoSnapshots(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, CryptoSnapshot>> {
   const params = { symbols: symbols.join(",") };
-  const resp = await dataV2HttpRequest(`/v1beta3/crypto/us/snapshots`, params, config);
+  const resp = await dataV2HttpRequest(
+    `/v1beta3/crypto/us/snapshots`,
+    params,
+    config
+  );
   const snapshots = resp.data.snapshots;
   const result = new Map<string, CryptoSnapshot>();
   for (const symbol in snapshots) {
@@ -624,7 +697,7 @@ export async function getCryptoSnapshots(
 
 export async function getLatestCryptoOrderbooks(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, CryptoOrderbook>> {
   const params = { symbols: symbols.join(",") };
   const resp = await dataV2HttpRequest(
@@ -666,9 +739,17 @@ export interface GetNewsParams {
   pageLimit?: number;
 }
 
-function getNewsParams(options: GetNewsParams): any {
-  const query = {} as any;
-  query.symbols = options.symbols?.length > 0 ? options.symbols.join(",") : null;
+function getNewsParams(options: GetNewsParams) {
+  const query = {} as {
+    symbols: string | null;
+    start?: string;
+    end?: string;
+    sort?: Sort;
+    include_content?: boolean;
+    exclude_contentless?: boolean;
+  };
+  query.symbols =
+    options.symbols?.length > 0 ? options.symbols.join(",") : null;
   query.start = options.start;
   query.end = options.end;
   query.sort = options.sort;
@@ -679,7 +760,7 @@ function getNewsParams(options: GetNewsParams): any {
 
 export async function getNews(
   options: GetNewsParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<AlpacaNews[]> {
   if (options.totalLimit && options.totalLimit < 0) {
     throw new Error("negative total limit");
@@ -704,7 +785,7 @@ export async function getNews(
       break;
     }
 
-    const resp: AxiosResponse<any> = await dataV2HttpRequest(
+    const resp: AxiosResponse = await dataV2HttpRequest(
       "/v1beta1/news",
       { ...params, limit: limit, page_token: pageToken },
       config
@@ -733,13 +814,13 @@ export interface GetOptionBarsParams {
 export async function getMultiOptionBars(
   symbols: Array<string>,
   options: GetOptionBarsParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaOptionBar[]>> {
   const multiBars = getMultiOptionBarsAsync(symbols, options, config);
   const bars = new Map<string, Array<AlpacaOptionBar>>();
   for await (const b of multiBars) {
     // symbol will always have a value
-    let symbol = b.Symbol ? b.Symbol : "";
+    const symbol = b.Symbol ? b.Symbol : "";
     delete b.Symbol;
     const items = bars.get(symbol) || new Array<AlpacaOptionBar>();
     bars.set(symbol, [...items, b]);
@@ -750,7 +831,7 @@ export async function getMultiOptionBars(
 export async function* getMultiOptionBarsAsync(
   symbols: Array<string>,
   options: GetOptionBarsParams,
-  config: any
+  config: HttpRequestConfig
 ): AsyncGenerator<AlpacaOptionBar, void, unknown> {
   const multiBars = getMultiDataV2(
     symbols,
@@ -778,13 +859,13 @@ export interface GetOptionTradesParams {
 export async function getMultiOptionTrades(
   symbols: Array<string>,
   options: GetOptionTradesParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaOptionTrade[]>> {
   const multiTrades = getMultiOptionTradesAsync(symbols, options, config);
   const trades = new Map<string, Array<AlpacaOptionTrade>>();
   for await (const t of multiTrades) {
     // symbol will always have a value
-    let symbol = t.Symbol ? t.Symbol : "";
+    const symbol = t.Symbol ? t.Symbol : "";
     delete t.Symbol;
     const items = trades.get(symbol) || new Array<AlpacaOptionTrade>();
     trades.set(symbol, [...items, t]);
@@ -795,7 +876,7 @@ export async function getMultiOptionTrades(
 export async function* getMultiOptionTradesAsync(
   symbols: Array<string>,
   options: GetOptionTradesParams,
-  config: any
+  config: HttpRequestConfig
 ): AsyncGenerator<AlpacaOptionTrade, void, unknown> {
   const multiBars = getMultiDataV2(
     symbols,
@@ -812,7 +893,7 @@ export async function* getMultiOptionTradesAsync(
 
 export async function getLatestOptionTrades(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaOptionTrade>> {
   const resp = await dataV2HttpRequest(
     `/v1beta1/options/${TYPE.TRADES}/latest`,
@@ -832,7 +913,7 @@ export async function getLatestOptionTrades(
 
 export async function getLatestOptionQuotes(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<Map<string, AlpacaOptionQuote>> {
   const resp = await dataV2HttpRequest(
     `/v1beta1/options/${TYPE.QUOTES}/latest`,
@@ -852,7 +933,7 @@ export async function getLatestOptionQuotes(
 
 export async function getOptionSnapshots(
   symbols: Array<string>,
-  config: any
+  config: HttpRequestConfig
 ): Promise<AlpacaOptionSnapshot[]> {
   const resp = await dataV2HttpRequest(
     `/v1beta1/options/snapshots?symbols=${symbols.join(",")}`,
@@ -884,7 +965,7 @@ export interface GetOptionChainParams {
 export async function getOptionChain(
   underlyingSymbol: string,
   options: GetOptionChainParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<AlpacaOptionSnapshot[]> {
   if (options.totalLimit && options.totalLimit < 0) {
     throw new Error("negative total limit");
@@ -942,7 +1023,7 @@ export interface GetCorporateActionParams {
 export async function getCorporateActions(
   symbols: Array<string>,
   options: GetCorporateActionParams,
-  config: any
+  config: HttpRequestConfig
 ): Promise<CorporateActions | undefined> {
   if (options.totalLimit && options.totalLimit < 0) {
     throw new Error("negative total limit");
@@ -969,7 +1050,7 @@ export async function getCorporateActions(
       break;
     }
 
-    const resp: AxiosResponse<any> = await dataV2HttpRequest(
+    const resp: AxiosResponse = await dataV2HttpRequest(
       `/v1beta1/corporate-actions`,
       { ...params, limit: limit, page_token: pageToken },
       config
