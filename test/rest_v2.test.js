@@ -1,7 +1,7 @@
 "use strict";
 
 const { expect, assert } = require("chai");
-const { default: api } = require("../dist/alpaca-trade-api");
+const { Alpaca: api } = require("../dist/alpaca-trade-api");
 const mock = require("./support/mock-server");
 
 const tradeKeys = [

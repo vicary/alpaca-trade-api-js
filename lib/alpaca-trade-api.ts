@@ -33,7 +33,7 @@ export type AlpacaOptions = {
   paper?: boolean;
 };
 
-export default class Alpaca {
+export class Alpaca {
   constructor(config: AlpacaOptions = {}) {
     this.configuration = {
       baseUrl:
@@ -180,165 +180,297 @@ export default class Alpaca {
   getTradesV2(
     symbol: string,
     options: dataV2.GetTradesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getTrades(symbol, options, config);
+    return dataV2.getTrades(symbol, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getMultiTradesV2(
     symbols: string[],
     options: dataV2.GetTradesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getMultiTrades(symbols, options, config);
+    return dataV2.getMultiTrades(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getMultiTradesAsyncV2(
     symbols: string[],
     options: dataV2.GetTradesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getMultiTradesAsync(symbols, options, config);
+    return dataV2.getMultiTradesAsync(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getQuotesV2(
     symbol: string,
     options: dataV2.GetQuotesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getQuotes(symbol, options, config);
+    return dataV2.getQuotes(symbol, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getMultiQuotesV2(
     symbols: string[],
     options: dataV2.GetQuotesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getMultiQuotes(symbols, options, config);
+    return dataV2.getMultiQuotes(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getMultiQuotesAsyncV2(
     symbols: string[],
     options: dataV2.GetQuotesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getMultiQuotesAsync(symbols, options, config);
+    return dataV2.getMultiQuotesAsync(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getBarsV2(
     symbol: string,
     options: dataV2.GetBarsParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getBars(symbol, options, config);
+    return dataV2.getBars(symbol, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getMultiBarsV2(
     symbols: string[],
     options: dataV2.GetBarsParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getMultiBars(symbols, options, config);
+    return dataV2.getMultiBars(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getMultiBarsAsyncV2(
     symbols: string[],
     options: dataV2.GetBarsParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getMultiBarsAsync(symbols, options, config);
+    return dataV2.getMultiBarsAsync(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestTrade(symbol: string, config = this.configuration) {
-    return dataV2.getLatestTrade(symbol, config);
+  getLatestTrade(symbol: string, config?: Partial<dataV2.HttpRequestConfig>) {
+    return dataV2.getLatestTrade(symbol, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestTrades(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestTrades(symbols, config);
+  getLatestTrades(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getLatestTrades(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestQuote(symbol: string, config = this.configuration) {
-    return dataV2.getLatestQuote(symbol, config);
+  getLatestQuote(symbol: string, config?: Partial<dataV2.HttpRequestConfig>) {
+    return dataV2.getLatestQuote(symbol, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestQuotes(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestQuotes(symbols, config);
+  getLatestQuotes(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getLatestQuotes(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestBar(symbol: string, config = this.configuration) {
-    return dataV2.getLatestBar(symbol, config);
+  getLatestBar(symbol: string, config?: Partial<dataV2.HttpRequestConfig>) {
+    return dataV2.getLatestBar(symbol, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestBars(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestBars(symbols, config);
+  getLatestBars(symbols: string[], config?: Partial<dataV2.HttpRequestConfig>) {
+    return dataV2.getLatestBars(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getSnapshot(symbol: string, config = this.configuration) {
-    return dataV2.getSnapshot(symbol, config);
+  getSnapshot(symbol: string, config?: Partial<dataV2.HttpRequestConfig>) {
+    return dataV2.getSnapshot(symbol, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getSnapshots(symbols: string[], config = this.configuration) {
-    return dataV2.getSnapshots(symbols, config);
+  getSnapshots(symbols: string[], config?: Partial<dataV2.HttpRequestConfig>) {
+    return dataV2.getSnapshots(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getCryptoTrades(
     symbols: string[],
     options: dataV2.GetCryptoTradesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getCryptoTrades(symbols, options, config);
+    return dataV2.getCryptoTrades(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getCryptoQuotes(
     symbols: string[],
     options: dataV2.GetCryptoQuotesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getCryptoQuotes(symbols, options, config);
+    return dataV2.getCryptoQuotes(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getCryptoBars(
     symbols: string[],
     options: dataV2.GetCryptoBarsParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getCryptoBars(symbols, options, config);
+    return dataV2.getCryptoBars(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestCryptoTrades(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestCryptoTrades(symbols, config);
+  getLatestCryptoTrades(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getLatestCryptoTrades(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestCryptoQuotes(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestCryptoQuotes(symbols, config);
+  getLatestCryptoQuotes(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getLatestCryptoQuotes(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getLatestCryptoBars(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestCryptoBars(symbols, config);
+  getLatestCryptoBars(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getLatestCryptoBars(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getCryptoSnapshots(symbols: string[], config = this.configuration) {
-    return dataV2.getCryptoSnapshots(symbols, config);
+  getCryptoSnapshots(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getCryptoSnapshots(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getCryptoOrderbooks(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestCryptoOrderbooks(symbols, config);
+  getCryptoOrderbooks(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getLatestCryptoOrderbooks(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getOptionBars(
     symbols: string[],
     options: dataV2.GetOptionBarsParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getMultiOptionBars(symbols, options, config);
+    return dataV2.getMultiOptionBars(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getOptionTrades(
     symbols: string[],
     options: dataV2.GetOptionTradesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getMultiOptionTrades(symbols, options, config);
+    return dataV2.getMultiOptionTrades(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getOptionLatestTrades(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestOptionTrades(symbols, config);
+  getOptionLatestTrades(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getLatestOptionTrades(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getOptionLatestQuotes(symbols: string[], config = this.configuration) {
-    return dataV2.getLatestOptionQuotes(symbols, config);
+  getOptionLatestQuotes(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getLatestOptionQuotes(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getOptionSnapshots(symbols: string[], config = this.configuration) {
-    return dataV2.getOptionSnapshots(symbols, config);
+  getOptionSnapshots(
+    symbols: string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getOptionSnapshots(symbols, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getOptionChain(
     underlying_symbol: string,
     options: dataV2.GetQuotesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getOptionChain(underlying_symbol, options, config);
+    return dataV2.getOptionChain(underlying_symbol, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   getCorporateActions(
     symbols: string[],
     options: dataV2.GetQuotesParams,
-    config = this.configuration
+    config?: Partial<dataV2.HttpRequestConfig>
   ) {
-    return dataV2.getCorporateActions(symbols, options, config);
+    return dataV2.getCorporateActions(symbols, options, {
+      ...this.configuration,
+      ...config,
+    });
   }
-  getNews(options: dataV2.GetNewsParams, config = this.configuration) {
-    return dataV2.getNews(options, config);
+  getNews(
+    options: dataV2.GetNewsParams,
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
+    return dataV2.getNews(options, {
+      ...this.configuration,
+      ...config,
+    });
   }
   newTimeframe(amount: number, unit: entityV2.TimeFrameUnit) {
     return entityV2.NewTimeframe(amount, unit);
