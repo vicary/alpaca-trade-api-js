@@ -40,7 +40,7 @@ describe("data_stream_v2", () => {
       });
       socket = alpaca.data_stream_v2;
     } catch (e) {
-      console.log(e);
+      console.error(e);
     }
   });
 
@@ -172,9 +172,7 @@ describe("data_stream_v2", () => {
     });
     socket.subscribeForQuotes(["AAPL"]);
 
-    const res = await waitFor(() => {
-      return isEqual(data, parsed);
-    });
+    const res = await waitFor(() => isEqual(data, parsed));
     expect(res).to.be.true;
   });
 
@@ -183,10 +181,10 @@ describe("data_stream_v2", () => {
     const parsed = {
       T: "b",
       Symbol: "AAPL",
-      OpenPrice: 127.82,
-      HighPrice: 128.32,
-      LowPrice: 126.32,
-      ClosePrice: 126.9,
+      Open: 127.82,
+      High: 128.32,
+      Low: 126.32,
+      Close: 126.9,
       Volume: 72015712,
       Timestamp: "2021-05-25T04:00:00Z",
       VWAP: 127.07392,
@@ -235,10 +233,10 @@ describe("data_stream_v2", () => {
     const parsed = {
       T: "u",
       Symbol: "AAPL",
-      OpenPrice: 100,
-      HighPrice: 101.2,
-      LowPrice: 98.67,
-      ClosePrice: 101.3,
+      Open: 100,
+      High: 101.2,
+      Low: 98.67,
+      Close: 101.3,
       Volume: 2570,
       Timestamp: "2021-03-05T16:00:30Z",
       TradeCount: 1235,

@@ -188,21 +188,11 @@ export class Alpaca {
     });
   }
   getMultiTradesV2(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetTradesParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getMultiTrades(symbols, options, {
-      ...this.configuration,
-      ...config,
-    });
-  }
-  getMultiTradesAsyncV2(
-    symbols: string[],
-    options: dataV2.GetTradesParams,
-    config?: Partial<dataV2.HttpRequestConfig>
-  ) {
-    return dataV2.getMultiTradesAsync(symbols, options, {
       ...this.configuration,
       ...config,
     });
@@ -218,21 +208,11 @@ export class Alpaca {
     });
   }
   getMultiQuotesV2(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetQuotesParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getMultiQuotes(symbols, options, {
-      ...this.configuration,
-      ...config,
-    });
-  }
-  getMultiQuotesAsyncV2(
-    symbols: string[],
-    options: dataV2.GetQuotesParams,
-    config?: Partial<dataV2.HttpRequestConfig>
-  ) {
-    return dataV2.getMultiQuotesAsync(symbols, options, {
       ...this.configuration,
       ...config,
     });
@@ -248,21 +228,11 @@ export class Alpaca {
     });
   }
   getMultiBarsV2(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetBarsParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getMultiBars(symbols, options, {
-      ...this.configuration,
-      ...config,
-    });
-  }
-  getMultiBarsAsyncV2(
-    symbols: string[],
-    options: dataV2.GetBarsParams,
-    config?: Partial<dataV2.HttpRequestConfig>
-  ) {
-    return dataV2.getMultiBarsAsync(symbols, options, {
       ...this.configuration,
       ...config,
     });
@@ -274,7 +244,7 @@ export class Alpaca {
     });
   }
   getLatestTrades(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getLatestTrades(symbols, {
@@ -289,7 +259,7 @@ export class Alpaca {
     });
   }
   getLatestQuotes(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getLatestQuotes(symbols, {
@@ -303,7 +273,10 @@ export class Alpaca {
       ...config,
     });
   }
-  getLatestBars(symbols: string[], config?: Partial<dataV2.HttpRequestConfig>) {
+  getLatestBars(
+    symbols: string | string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
     return dataV2.getLatestBars(symbols, {
       ...this.configuration,
       ...config,
@@ -315,14 +288,17 @@ export class Alpaca {
       ...config,
     });
   }
-  getSnapshots(symbols: string[], config?: Partial<dataV2.HttpRequestConfig>) {
+  getSnapshots(
+    symbols: string | string[],
+    config?: Partial<dataV2.HttpRequestConfig>
+  ) {
     return dataV2.getSnapshots(symbols, {
       ...this.configuration,
       ...config,
     });
   }
   getCryptoTrades(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetCryptoTradesParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
@@ -332,7 +308,7 @@ export class Alpaca {
     });
   }
   getCryptoQuotes(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetCryptoQuotesParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
@@ -342,7 +318,7 @@ export class Alpaca {
     });
   }
   getCryptoBars(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetCryptoBarsParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
@@ -352,7 +328,7 @@ export class Alpaca {
     });
   }
   getLatestCryptoTrades(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getLatestCryptoTrades(symbols, {
@@ -361,7 +337,7 @@ export class Alpaca {
     });
   }
   getLatestCryptoQuotes(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getLatestCryptoQuotes(symbols, {
@@ -370,7 +346,7 @@ export class Alpaca {
     });
   }
   getLatestCryptoBars(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getLatestCryptoBars(symbols, {
@@ -379,7 +355,7 @@ export class Alpaca {
     });
   }
   getCryptoSnapshots(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getCryptoSnapshots(symbols, {
@@ -388,7 +364,7 @@ export class Alpaca {
     });
   }
   getCryptoOrderbooks(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getLatestCryptoOrderbooks(symbols, {
@@ -397,7 +373,7 @@ export class Alpaca {
     });
   }
   getOptionBars(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetOptionBarsParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
@@ -407,7 +383,7 @@ export class Alpaca {
     });
   }
   getOptionTrades(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetOptionTradesParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
@@ -417,7 +393,7 @@ export class Alpaca {
     });
   }
   getOptionLatestTrades(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getLatestOptionTrades(symbols, {
@@ -426,7 +402,7 @@ export class Alpaca {
     });
   }
   getOptionLatestQuotes(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getLatestOptionQuotes(symbols, {
@@ -435,7 +411,7 @@ export class Alpaca {
     });
   }
   getOptionSnapshots(
-    symbols: string[],
+    symbols: string | string[],
     config?: Partial<dataV2.HttpRequestConfig>
   ) {
     return dataV2.getOptionSnapshots(symbols, {
@@ -454,7 +430,7 @@ export class Alpaca {
     });
   }
   getCorporateActions(
-    symbols: string[],
+    symbols: string | string[],
     options: dataV2.GetQuotesParams,
     config?: Partial<dataV2.HttpRequestConfig>
   ) {

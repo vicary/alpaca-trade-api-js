@@ -1,31 +1,4 @@
-import mapKeys from "lodash/mapKeys";
-import mapValues from "lodash/mapValues";
-
-const trade_mapping_v2 = {
-  S: "Symbol",
-  i: "ID",
-  x: "Exchange",
-  p: "Price",
-  s: "Size",
-  t: "Timestamp",
-  c: "Conditions",
-  z: "Tape",
-};
-
-export interface AlpacaTrade {
-  Symbol: string;
-  ID: number;
-  Exchange: string;
-  Price: number;
-  Size: number;
-  Timestamp: string;
-  Conditions: Array<string>;
-  Tape: string;
-}
-
-export interface RawTrade {
-  T: string;
-  S: string;
+export interface RawCompactTrade {
   i: number;
   x: string;
   p: number;
@@ -35,94 +8,93 @@ export interface RawTrade {
   z: string;
 }
 
-const quote_mapping_v2 = {
-  S: "Symbol",
-  bx: "BidExchange",
-  bp: "BidPrice",
-  bs: "BidSize",
-  ax: "AskExchange",
-  ap: "AskPrice",
-  as: "AskSize",
-  t: "Timestamp",
-  c: "Conditions",
-  z: "Tape",
-};
+export interface RawTrade extends RawCompactTrade {
+  T?: "t";
+  S: string;
+}
 
-export interface AlpacaQuote {
+export interface AlpacaTrade {
+  T: "t";
   Symbol: string;
-  BidExchange: string;
-  BidPrice: number;
-  BidSize: number;
-  AskExchange: string;
-  AskPrice: number;
-  AskSize: number;
+  Exchange: string;
+  ID: number;
+  Price: number;
+  Size: number;
   Timestamp: string;
   Conditions: Array<string>;
   Tape: string;
 }
 
-export interface RawQuote {
-  T: string;
-  S: string;
-  bx: string;
-  bp: number;
-  bs: number;
+export interface RawCompactQuote {
+  t: string;
   ax: string;
   ap: number;
   as: number;
-  t: string;
+  bx: string;
+  bp: number;
+  bs: number;
   c: Array<string>;
-  z: string;
 }
 
-const bar_mapping_v2 = {
-  S: "Symbol",
-  o: "OpenPrice",
-  h: "HighPrice",
-  l: "LowPrice",
-  c: "ClosePrice",
-  v: "Volume",
-  t: "Timestamp",
-  vw: "VWAP",
-  n: "TradeCount",
-};
-
-export interface AlpacaBar {
-  Symbol: string;
-  OpenPrice: number;
-  HighPrice: number;
-  LowPrice: number;
-  ClosePrice: number;
-  Volume: number;
-  Timestamp: string;
-  VWAP: number;
-  TradeCount: number;
-}
-
-export interface RawBar {
-  T: string;
+export interface RawQuote extends RawCompactQuote {
+  T?: "q";
   S: string;
+  z?: string;
+}
+
+export interface AlpacaQuote {
+  T: "q";
+  AskExchange: string;
+  AskPrice: number;
+  AskSize: number;
+  BidExchange: string;
+  BidPrice: number;
+  BidSize: number;
+  Conditions: Array<string>;
+  Timestamp: string;
+  Symbol: string;
+  Tape?: string;
+}
+
+export interface RawCompactBar {
+  t: string;
   o: number;
   h: number;
   l: number;
   c: number;
   v: number;
-  t: string;
-  vw: number;
-  n: number;
 }
 
-const snapshot_mapping_v2 = {
-  symbol: "symbol",
-  latestTrade: "LatestTrade",
-  latestQuote: "LatestQuote",
-  minuteBar: "MinuteBar",
-  dailyBar: "DailyBar",
-  prevDailyBar: "PrevDailyBar",
-};
+export interface RawBar extends RawCompactBar {
+  T?: "b" | "u" | "d";
+  S: string;
+  vw?: number;
+  n?: number;
+}
+export interface AlpacaBar {
+  T: "b" | "u" | "d";
+  Open: number;
+  High: number;
+  Low: number;
+  Close: number;
+  Volume: number;
+  Timestamp: string;
+  Symbol: string;
+  VWAP?: number;
+  TradeCount?: number;
+}
+
+export interface RawSnapshot {
+  symbol: string;
+  latestTrade: RawCompactTrade;
+  latestQuote: RawCompactQuote;
+  minuteBar: RawCompactBar;
+  dailyBar: RawCompactBar;
+  prevDailyBar: RawCompactBar;
+}
 
 export interface AlpacaSnapshot {
-  Symbol: string;
+  symbol: string;
   LatestTrade: AlpacaTrade;
   LatestQuote: AlpacaQuote;
   MinuteBar: AlpacaBar;
@@ -130,17 +102,18 @@ export interface AlpacaSnapshot {
   PrevDailyBar: AlpacaBar;
 }
 
-const status_mapping_v2 = {
-  S: "Symbol",
-  sc: "StatusCode",
-  sm: "StatusMessage",
-  rc: "ReasonCode",
-  rm: "ReasonMessage",
-  t: "Timestamp",
-  z: "Tape",
-};
-
+export interface RawStatus {
+  T?: "s";
+  S: string;
+  sc: string;
+  sm: string;
+  rc: string;
+  rm: string;
+  t: string;
+  z: string;
+}
 export interface AlpacaStatus {
+  T: "s";
   Symbol: string;
   StatusCode: string;
   StatusMessage: string;
@@ -150,37 +123,8 @@ export interface AlpacaStatus {
   Tape: string;
 }
 
-export interface RawStatus {
-  T: string;
-  S: string;
-  sc: string;
-  sm: string;
-  rc: string;
-  rm: string;
-  t: string;
-  z: string;
-}
-
-const luld_mapping_v2 = {
-  S: "Symbol",
-  u: "LimitUpPrice",
-  d: "LimitDownPrice",
-  i: "Indicator",
-  t: "Timestamp",
-  z: "Tape",
-};
-
-export interface AlpacaLuld {
-  Symbol: string;
-  LimitUpPrice: number;
-  LimitDownPrice: number;
-  Indicator: string;
-  Timestamp: string;
-  Tape: string;
-}
-
 export interface RawLuld {
-  T: string;
+  T?: "l";
   S: string;
   u: number;
   d: number;
@@ -189,30 +133,18 @@ export interface RawLuld {
   z: string;
 }
 
-const cancel_error_mapping_v2 = {
-  S: "Symbol",
-  i: "ID",
-  x: "Exchange",
-  p: "Price",
-  s: "Size",
-  a: "CancelErrorAction",
-  z: "Tape",
-  t: "Timestamp",
-};
-
-export interface AlpacaCancelError {
+export interface AlpacaLuld {
+  T: "l";
   Symbol: string;
-  ID: number;
-  Exchange: string;
-  Price: number;
-  Size: number;
-  CancelErrorAction: string;
-  Tape: string;
+  LimitUpPrice: number;
+  LimitDownPrice: number;
+  Indicator: string;
   Timestamp: string;
+  Tape: string;
 }
 
 export interface RawCancelError {
-  T: string;
+  T?: "x";
   S: string;
   i: number;
   x: string;
@@ -223,38 +155,20 @@ export interface RawCancelError {
   t: string;
 }
 
-const correction_mapping_v2 = {
-  S: "Symbol",
-  x: "Exchange",
-  oi: "OriginalID",
-  op: "OriginalPrice",
-  os: "OriginalSize",
-  oc: "OriginalConditions",
-  ci: "CorrectedID",
-  cp: "CorrectedPrice",
-  cs: "CorrectedSize",
-  cc: "CorrectedConditions",
-  z: "Tape",
-  t: "Timestamp",
-};
-
-export interface AlpacaCorrection {
+export interface AlpacaCancelError {
+  T: "x";
   Symbol: string;
+  ID: number;
   Exchange: string;
-  OriginalID: number;
-  OriginalPrice: number;
-  OriginalSize: number;
-  OriginalConditions: Array<string>;
-  CorrectedID: number;
-  CorrectedPrice: number;
-  CorrectedSize: number;
-  CorrectedConditions: Array<string>;
+  Price: number;
+  Size: number;
+  CancelErrorAction: string;
   Tape: string;
   Timestamp: string;
 }
 
 export interface RawCorrection {
-  T: string;
+  T?: "c";
   S: string;
   x: string;
   oi: number;
@@ -269,26 +183,25 @@ export interface RawCorrection {
   t: string;
 }
 
-const crypto_trade_mapping = {
-  S: "Symbol",
-  t: "Timestamp",
-  x: "Exchange",
-  p: "Price",
-  s: "Size",
-  tks: "TakerSide",
-  i: "ID",
-};
-
-export interface CryptoTrade {
+export interface AlpacaCorrection {
+  T: "c";
+  Symbol: string;
+  Exchange: string;
+  OriginalID: number;
+  OriginalPrice: number;
+  OriginalSize: number;
+  OriginalConditions: Array<string>;
+  CorrectedID: number;
+  CorrectedPrice: number;
+  CorrectedSize: number;
+  CorrectedConditions: Array<string>;
+  Tape: string;
   Timestamp: string;
-  Price: number;
-  Size: number;
-  TakerSide: string;
-  Id: number;
 }
 
 export interface RawCryptoTrade {
-  T: string;
+  T?: "t";
+  S: string;
   t: string;
   p: number;
   s: number;
@@ -296,24 +209,19 @@ export interface RawCryptoTrade {
   i: number;
 }
 
-const crypto_quote_mapping = {
-  t: "Timestamp",
-  bp: "BidPrice",
-  bs: "BidSize",
-  ap: "AskPrice",
-  as: "AskSize",
-};
-
-export interface CryptoQuote {
+export interface CryptoTrade {
+  T: "t";
+  Symbol: string;
   Timestamp: string;
-  BidPrice: number;
-  BidSize: number;
-  AskPrice: number;
-  AskSize: number;
+  Price: number;
+  Size: number;
+  TakerSide: string;
+  ID: number;
 }
 
 export interface RawCryptoQuote {
-  T: string;
+  T?: "q";
+  S: string;
   t: string;
   bp: number;
   bs: number;
@@ -321,30 +229,18 @@ export interface RawCryptoQuote {
   as: number;
 }
 
-const crypto_bar_mapping = {
-  t: "Timestamp",
-  o: "Open",
-  h: "High",
-  l: "Low",
-  c: "Close",
-  v: "Volume",
-  vw: "VWAP",
-  n: "TradeCount",
-};
-
-export interface CryptoBar {
+export interface CryptoQuote {
+  T: "q";
+  Symbol: string;
   Timestamp: string;
-  Open: number;
-  High: number;
-  Low: number;
-  Close: number;
-  Volume: number;
-  VWAP: number;
-  TradeCount: number;
+  BidPrice: number;
+  BidSize: number;
+  AskPrice: number;
+  AskSize: number;
 }
-
 export interface RawCryptoBar {
-  T: string;
+  T?: "b";
+  S: string;
   t: string;
   o: number;
   h: number;
@@ -355,15 +251,30 @@ export interface RawCryptoBar {
   n: number;
 }
 
-const crypto_snapshot_mapping = {
-  latestTrade: "LatestTrade",
-  latestQuote: "LatestQuote",
-  minuteBar: "MinuteBar",
-  dailyBar: "DailyBar",
-  prevDailyBar: "PrevDailyBar",
-};
+export interface CryptoBar {
+  T: "b";
+  Symbol: string;
+  Timestamp: string;
+  Open: number;
+  High: number;
+  Low: number;
+  Close: number;
+  Volume: number;
+  VWAP: number;
+  TradeCount: number;
+}
+
+export interface RawCryptoSnapshot {
+  symbol: string;
+  latestTrade: RawCryptoTrade;
+  latestQuote: RawCryptoQuote;
+  minuteBar: RawCryptoBar;
+  dailyBar: RawCryptoBar;
+  prevDailyBar: RawCryptoBar;
+}
 
 export interface CryptoSnapshot {
+  Symbol: string;
   LatestTrade: CryptoTrade;
   LatestQuote: CryptoQuote;
   MinuteBar: CryptoBar;
@@ -371,75 +282,60 @@ export interface CryptoSnapshot {
   PrevDailyBar: CryptoBar;
 }
 
-const crypto_orderbook_entry_mapping = {
-  p: "Price",
-  s: "Size",
-};
+export interface RawCryptoOrderbookEntry {
+  S: string;
+  p: number;
+  s: number;
+}
 
 export interface CryptoOrderbookEntry {
+  Symbol: string;
   Price: number;
   Size: number;
 }
 
-const crypto_orderbook_mapping = {
-  t: "Timestamp",
-  b: "Bids",
-  a: "Asks",
-};
+export interface RawCryptoOrderbook {
+  T?: "o";
+  S: string;
+  t: string;
+  b: Array<RawCryptoOrderbookEntry>;
+  a: Array<RawCryptoOrderbookEntry>;
+}
 
 export interface CryptoOrderbook {
+  T: "o";
   Timestamp: string;
   Bids: Array<CryptoOrderbookEntry>;
   Asks: Array<CryptoOrderbookEntry>;
 }
 
-export interface RawCryptoOrderbook {
-  T: string;
-  t: string;
-  b: Array<CryptoOrderbookEntry>;
-  a: Array<CryptoOrderbookEntry>;
+export interface RawNewsImage {
+  size: string;
+  url: string;
 }
-
-const news_image_mapping = {
-  size: "Size",
-  url: "URL",
-};
 
 export interface NewsImage {
   Size: string;
   URL: string;
 }
 
-const news_mapping = {
-  id: "ID",
-  author: "Author",
-  created_at: "CreatedAt",
-  updated_at: "UpdatedAt",
-  headline: "Headline",
-  summary: "Summary",
-  content: "Content",
-  images: "Images",
-  url: "URL",
-  symbols: "Symbols",
-  source: "Source",
-};
-
 export interface RawAlpacaNews {
-  T: string;
-  ID: number;
-  Author: string;
-  CreatedAt: string;
-  UpdatedAt: string;
-  Headline: string;
-  Summary: string;
-  Content: string;
-  Images: Array<NewsImage>;
-  URL: string;
-  Symbols: Array<string>;
-  Source: string;
+  T?: "n";
+  id: number;
+  author: string;
+  created_at: string;
+  updated_at: string;
+  headline: string;
+  summary: string;
+  content: string;
+  images?: Array<RawNewsImage>;
+  url: string;
+  symbols: Array<string>;
+  source?: string;
 }
 
 export interface AlpacaNews {
+  T: "n";
   ID: number;
   Author: string;
   CreatedAt: string;
@@ -447,23 +343,24 @@ export interface AlpacaNews {
   Headline: string;
   Summary: string;
   Content: string;
-  Images: Array<NewsImage>;
+  Images?: Array<NewsImage>;
   URL: string;
   Symbols: Array<string>;
-  Source: string;
+  Source?: string;
 }
 
-const option_bar_mapping = {
-  S: "Symbol",
-  o: "Open",
-  h: "High",
-  l: "Low",
-  c: "Close",
-  v: "Volume",
-  t: "Timestamp",
-  vw: "VWAP",
-  n: "TradeCount",
-};
+export interface RawOptionBar {
+  T?: string;
+  S: string;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+  t: string;
+  vw: number;
+  n: number;
+}
 
 export interface AlpacaOptionBar {
   Symbol?: string;
@@ -477,28 +374,6 @@ export interface AlpacaOptionBar {
   TradeCount: number;
 }
 
-export interface RawOptionBar {
-  T: string;
-  S: string;
-  o: number;
-  h: number;
-  l: number;
-  c: number;
-  v: number;
-  t: string;
-  vw: number;
-  n: number;
-}
-
-const option_tarde_mapping = {
-  S: "Symbol",
-  x: "Exchange",
-  p: "Price",
-  s: "Size",
-  t: "Timestamp",
-  c: "Condition",
-};
-
 export interface AlpacaOptionTrade {
   Symbol?: string;
   Exchange: string;
@@ -509,7 +384,7 @@ export interface AlpacaOptionTrade {
 }
 
 export interface RawOptionTrade {
-  T: string;
+  T?: "t";
   S: string;
   x: string;
   p: number;
@@ -517,19 +392,6 @@ export interface RawOptionTrade {
   t: string;
   c: string;
 }
-
-const option_quote_mapping = {
-  S: "Symbol",
-  bx: "BidExchange",
-  bp: "BidPrice",
-  bs: "BidSize",
-  ax: "AskExchange",
-  ap: "AskPrice",
-  as: "AskSize",
-  t: "Timestamp",
-  c: "Conditions",
-  z: "Tape",
-};
 
 export interface AlpacaOptionQuote {
   Symbol?: string;
@@ -544,7 +406,8 @@ export interface AlpacaOptionQuote {
 }
 
 export interface RawOptionQuote {
-  T: string;
+  T?: "q";
+  t: string;
   S: string;
   bx: string;
   bp: number;
@@ -563,153 +426,301 @@ export interface Greeks {
   Rho: number;
 }
 
-const option_snapshot_mapping = {
-  symbol: "symbol",
-  latestTrade: "LatestTrade",
-  latestQuote: "LatestQuote",
-  impliedVolatility: "ImpliedVolatility",
-  greeks: "Greeks",
-};
+export interface RawOptionSnapshot {
+  symbol: string;
+  latestTrade: RawOptionTrade;
+  latestQuote: RawOptionQuote;
+  impliedVolatility: number;
+  greeks: Greeks;
+}
 
 export interface AlpacaOptionSnapshot {
   Symbol: string;
-  LatestTrade: AlpacaTrade;
-  LatestQuote: AlpacaQuote;
-  ImpliedVOlatility: number;
+  LatestTrade: AlpacaOptionTrade;
+  LatestQuote: AlpacaOptionQuote;
+  ImpliedVolatility: number;
   Greeks: Greeks;
 }
 
 export function AlpacaTradeV2(data: RawTrade): AlpacaTrade {
-  return aliasObjectKey(data, trade_mapping_v2) as AlpacaTrade;
+  return {
+    T: data.T ?? "t",
+    Symbol: data.S,
+    Exchange: data.x,
+    ID: data.i,
+    Price: data.p,
+    Size: data.s,
+    Timestamp: data.t,
+    Conditions: data.c,
+    Tape: data.z,
+  };
 }
 
 export function AlpacaQuoteV2(data: RawQuote): AlpacaQuote {
-  return aliasObjectKey(data, quote_mapping_v2) as AlpacaQuote;
+  return {
+    T: data.T ?? "q",
+    AskExchange: data.ax,
+    AskPrice: data.ap,
+    AskSize: data.as,
+    BidExchange: data.bx,
+    BidPrice: data.bp,
+    BidSize: data.bs,
+    Conditions: data.c,
+    Timestamp: data.t,
+    Symbol: data.S,
+    Tape: data.z,
+  };
 }
 
 export function AlpacaBarV2(data: RawBar): AlpacaBar {
-  return aliasObjectKey(data, bar_mapping_v2) as AlpacaBar;
+  return {
+    T: data.T ?? "b",
+    Symbol: data.S,
+    Open: data.o,
+    High: data.h,
+    Low: data.l,
+    Close: data.c,
+    Volume: data.v,
+    VWAP: data.vw,
+    TradeCount: data.n,
+    Timestamp: data.t,
+  };
 }
 
-export function AlpacaSnapshotV2(data: any): AlpacaSnapshot {
-  const snapshot = aliasObjectKey(data, snapshot_mapping_v2);
-
-  return mapValues(snapshot, (value: any, key: any) => {
-    return convertSnapshotData(key, value, false);
-  }) as AlpacaSnapshot;
+export function AlpacaSnapshotV2(data: RawSnapshot): AlpacaSnapshot {
+  return {
+    symbol: data.symbol,
+    LatestTrade: AlpacaTradeV2({
+      T: "t",
+      S: data.symbol,
+      ...data.latestTrade,
+    }),
+    LatestQuote: AlpacaQuoteV2({
+      T: "q",
+      S: data.symbol,
+      ...data.latestQuote,
+    }),
+    MinuteBar: AlpacaBarV2({
+      T: "b",
+      S: data.symbol,
+      ...data.minuteBar,
+    }),
+    DailyBar: AlpacaBarV2({
+      T: "b",
+      S: data.symbol,
+      ...data.dailyBar,
+    }),
+    PrevDailyBar: AlpacaBarV2({
+      T: "b",
+      S: data.symbol,
+      ...data.prevDailyBar,
+    }),
+  };
 }
 
 export function AlpacaStatusV2(data: RawStatus): AlpacaStatus {
-  return aliasObjectKey(data, status_mapping_v2) as AlpacaStatus;
+  return {
+    T: data.T ?? "s",
+    Symbol: data.S,
+    StatusCode: data.sc,
+    StatusMessage: data.sm,
+    ReasonCode: data.rc,
+    ReasonMessage: data.rm,
+    Timestamp: data.t,
+    Tape: data.z,
+  };
 }
 
 export function AlpacaLuldV2(data: RawLuld): AlpacaLuld {
-  return aliasObjectKey(data, luld_mapping_v2) as AlpacaLuld;
+  return {
+    T: data.T ?? "l",
+    Symbol: data.S,
+    LimitUpPrice: data.u,
+    LimitDownPrice: data.d,
+    Indicator: data.i,
+    Timestamp: data.t,
+    Tape: data.z,
+  };
 }
 
 export function AlpacaCancelErrorV2(data: RawCancelError): AlpacaCancelError {
-  return aliasObjectKey(data, cancel_error_mapping_v2) as AlpacaCancelError;
+  return {
+    T: data.T ?? "x",
+    ID: data.i,
+    Symbol: data.S,
+    Exchange: data.x,
+    Price: data.p,
+    Size: data.s,
+    CancelErrorAction: data.a,
+    Tape: data.z,
+    Timestamp: data.t,
+  };
 }
 
 export function AlpacaCorrectionV2(data: RawCorrection): AlpacaCorrection {
-  return aliasObjectKey(data, correction_mapping_v2) as AlpacaCorrection;
+  return {
+    T: data.T ?? "c",
+    Symbol: data.S,
+    Exchange: data.x,
+    OriginalID: data.oi,
+    OriginalPrice: data.op,
+    OriginalSize: data.os,
+    OriginalConditions: data.oc,
+    CorrectedID: data.ci,
+    CorrectedPrice: data.cp,
+    CorrectedSize: data.cs,
+    CorrectedConditions: data.cc,
+    Tape: data.z,
+    Timestamp: data.t,
+  };
 }
 
 export function AlpacaCryptoTrade(data: RawCryptoTrade): CryptoTrade {
-  return aliasObjectKey(data, crypto_trade_mapping) as CryptoTrade;
+  return {
+    T: data.T ?? "t",
+    ID: data.i,
+    Symbol: data.S,
+    Price: data.p,
+    Size: data.s,
+    TakerSide: data.tks,
+    Timestamp: data.t,
+  };
 }
 
 export function AlpacaCryptoQuote(data: RawCryptoQuote): CryptoQuote {
-  return aliasObjectKey(data, crypto_quote_mapping) as CryptoQuote;
+  return {
+    T: data.T ?? "q",
+    Symbol: data.S,
+    BidPrice: data.bp,
+    BidSize: data.bs,
+    AskPrice: data.ap,
+    AskSize: data.as,
+    Timestamp: data.t,
+  };
 }
 
 export function AlpacaCryptoBar(data: RawCryptoBar): CryptoBar {
-  return aliasObjectKey(data, crypto_bar_mapping) as CryptoBar;
-}
-
-export function AlpacaCryptoSnapshot(data: any): CryptoSnapshot {
-  const snapshot = aliasObjectKey(data, crypto_snapshot_mapping);
-
-  return mapValues(snapshot, (value: any, key: any) => {
-    return convertSnapshotData(key, value, true);
-  }) as CryptoSnapshot;
-}
-
-export function AlpacaCryptoOrderbook(data: RawCryptoOrderbook): CryptoOrderbook {
-  const mapFn = (entries: any[]) =>
-    entries.map<any>((entry) => aliasObjectKey(entry, crypto_orderbook_entry_mapping));
-
-  const orderbook = aliasObjectKey(data, crypto_orderbook_mapping) as CryptoOrderbook;
-
   return {
-    ...orderbook,
-    Bids: mapFn(orderbook.Bids),
-    Asks: mapFn(orderbook.Asks),
+    T: data.T ?? "b",
+    Symbol: data.S,
+    Open: data.o,
+    High: data.h,
+    Low: data.l,
+    Close: data.c,
+    Volume: data.v,
+    VWAP: data.vw,
+    TradeCount: data.n,
+    Timestamp: data.t,
+  };
+}
+
+export function AlpacaCryptoSnapshot(data: RawCryptoSnapshot): CryptoSnapshot {
+  return {
+    Symbol: data.symbol,
+    LatestTrade: AlpacaCryptoTrade(data.latestTrade),
+    LatestQuote: AlpacaCryptoQuote(data.latestQuote),
+    MinuteBar: AlpacaCryptoBar(data.minuteBar),
+    DailyBar: AlpacaCryptoBar(data.dailyBar),
+    PrevDailyBar: AlpacaCryptoBar(data.prevDailyBar),
+  };
+}
+
+export function AlpacaCryptoOrderbook(
+  data: RawCryptoOrderbook
+): CryptoOrderbook {
+  return {
+    T: data.T ?? "o",
+    Bids: data.b.map((entry) => ({
+      Symbol: data.S,
+      Price: entry.p,
+      Size: entry.s,
+    })),
+    Asks: data.a.map((entry) => ({
+      Symbol: data.S,
+      Price: entry.p,
+      Size: entry.s,
+    })),
+    Timestamp: data.t,
   };
 }
 
 export function AlpacaOptionBarV1Beta1(data: RawOptionBar): AlpacaOptionBar {
-  return aliasObjectKey(data, option_bar_mapping) as AlpacaOptionBar;
+  return {
+    Symbol: data.S,
+    Open: data.o,
+    High: data.h,
+    Low: data.l,
+    Close: data.c,
+    Volume: data.v,
+    VWAP: data.vw,
+    TradeCount: data.n,
+    Timestamp: data.t,
+  };
 }
 
-export function AlpacaOptionTradeV1Beta1(data: RawOptionTrade): AlpacaOptionTrade {
-  return aliasObjectKey(data, option_tarde_mapping) as AlpacaOptionTrade;
+export function AlpacaOptionTradeV1Beta1(
+  data: RawOptionTrade
+): AlpacaOptionTrade {
+  return {
+    Symbol: data.S,
+    Exchange: data.x,
+    Price: data.p,
+    Size: data.s,
+    Timestamp: data.t,
+    Condition: data.c,
+  };
 }
 
-export function AlpacaOptionQuoteV1Beta1(data: RawOptionQuote): AlpacaOptionQuote {
-  return aliasObjectKey(data, option_quote_mapping) as AlpacaOptionQuote;
+export function AlpacaOptionQuoteV1Beta1(
+  data: RawOptionQuote
+): AlpacaOptionQuote {
+  return {
+    Symbol: data.S,
+    BidExchange: data.bx,
+    BidPrice: data.bp,
+    BidSize: data.bs,
+    AskExchange: data.ax,
+    AskPrice: data.ap,
+    AskSize: data.as,
+    Timestamp: data.t,
+    Condition: data.c,
+  };
 }
 
-export function AlpacaOptionSnapshotV1Beta1(data: any): AlpacaOptionSnapshot {
-  const snapshot = aliasObjectKey(data, option_snapshot_mapping);
-
-  return mapValues(snapshot, (value: any, key: any) => {
-    return convertOptionSnapshotData(key, value);
-  }) as AlpacaOptionSnapshot;
-}
-
-function aliasObjectKey(data: any, mapping: any) {
-  return mapKeys(data, (_value: any, key: any) => {
-    return Object.hasOwn(mapping, key) ? mapping[key] : key;
-  });
-}
-
-function convertSnapshotData(key: string, data: any, isCrypto: boolean) {
-  switch (key) {
-    case "LatestTrade":
-      return isCrypto ? AlpacaCryptoTrade(data) : AlpacaTradeV2(data);
-    case "LatestQuote":
-      return isCrypto ? AlpacaCryptoQuote(data) : AlpacaQuoteV2(data);
-    case "MinuteBar":
-    case "DailyBar":
-    case "PrevDailyBar":
-      return isCrypto ? AlpacaCryptoBar(data) : AlpacaBarV2(data);
-    default:
-      return data;
-  }
-}
-
-function convertOptionSnapshotData(key: string, data: any) {
-  switch (key) {
-    case "LatestTrade":
-      return AlpacaOptionTradeV1Beta1(data);
-    case "LatestQuote":
-      return AlpacaOptionQuoteV1Beta1(data);
-    default:
-      return data;
-  }
+export function AlpacaOptionSnapshotV1Beta1(
+  data: RawOptionSnapshot
+): AlpacaOptionSnapshot {
+  return {
+    Symbol: data.symbol,
+    LatestTrade: AlpacaOptionTradeV1Beta1(data.latestTrade),
+    LatestQuote: AlpacaOptionQuoteV1Beta1(data.latestQuote),
+    ImpliedVolatility: data.impliedVolatility,
+    Greeks: data.greeks,
+  };
 }
 
 export function AlpacaNews(data: RawAlpacaNews): AlpacaNews {
-  const mappedNews = aliasObjectKey(data, news_mapping);
+  return {
+    T: data.T ?? "n",
+    ID: data.id,
+    Author: data.author,
+    CreatedAt: data.created_at,
+    UpdatedAt: data.updated_at,
+    Headline: data.headline,
+    Summary: data.summary,
+    Content: data.content,
+    Images: data.images?.map(AlpacaNewsImage),
+    URL: data.url,
+    Symbols: data.symbols,
+    Source: data.source,
+  };
+}
 
-  if (mappedNews.Images) {
-    mappedNews.Images.forEach((element: any) => {
-      return aliasObjectKey(element, news_image_mapping);
-    });
-  }
-
-  return mappedNews as AlpacaNews;
+export function AlpacaNewsImage(data: RawNewsImage): NewsImage {
+  return {
+    Size: data.size,
+    URL: data.url,
+  };
 }
 
 export enum TimeFrameUnit {
@@ -725,18 +736,155 @@ export function NewTimeframe(amount: number, unit: TimeFrameUnit): string {
     throw new Error("amount must be a positive integer value");
   }
   if (unit == TimeFrameUnit.MIN && amount > 59) {
-    throw new Error("minute timeframe can only be used with amount between 1-59");
+    throw new Error(
+      "minute timeframe can only be used with amount between 1-59"
+    );
   }
   if (unit == TimeFrameUnit.HOUR && amount > 23) {
     throw new Error("hour timeframe can only be used with amounts 1-23");
   }
-  if ((unit == TimeFrameUnit.DAY || unit == TimeFrameUnit.WEEK) && amount != 1) {
+  if (
+    (unit == TimeFrameUnit.DAY || unit == TimeFrameUnit.WEEK) &&
+    amount != 1
+  ) {
     throw new Error("day and week timeframes can only be used with amount 1");
   }
   if (unit == TimeFrameUnit.MONTH && ![1, 2, 3, 6, 12].includes(amount)) {
-    throw new Error("month timeframe can only be used with amount 1, 2, 3, 6 and 12");
+    throw new Error(
+      "month timeframe can only be used with amount 1, 2, 3, 6 and 12"
+    );
   }
   return `${amount}${unit}`;
+}
+
+export interface RawCorporateActions {
+  cash_dividends?: Array<RawCashDividend>;
+  reverse_splits?: Array<RawReverseSplit>;
+  forward_splits?: Array<RawForwardSplit>;
+  unit_splits?: Array<RawUnitSplit>;
+  cash_mergers?: Array<RawCashMerger>;
+  stock_mergers?: Array<RawStockMerger>;
+  stock_and_cash_mergers?: Array<RawStockAndCashMerger>;
+  stock_dividends?: Array<RawStockDividends>;
+  redemptions?: Array<RawRedemption>;
+  spin_offs?: Array<RawSpinOff>;
+  name_changes?: Array<RawNameChange>;
+  worthless_removals?: Array<RawWorthlessRemoval>;
+  rights_distributions?: Array<RawRightsDistribution>;
+}
+
+export interface RawCashDividend {
+  ex_date: string;
+  foreign: boolean;
+  payable_date: string;
+  process_date: string;
+  rate: number;
+  record_date: string;
+  special: boolean;
+  symbol: string;
+}
+
+export interface RawReverseSplit {
+  ex_date: string;
+  new_rate: number;
+  old_rate: number;
+  payable_date: string;
+  process_date: string;
+  record_date: string;
+  symbol: string;
+}
+
+export interface RawForwardSplit {
+  due_bill_redemption_date: string;
+  ex_date: string;
+  new_rate: number;
+  old_rate: number;
+  payable_date: string;
+  process_date: string;
+  record_date: string;
+  symbol: string;
+}
+
+export interface RawUnitSplit {
+  alternate_rate: number;
+  alternate_symbol: string;
+  effective_date: string;
+  new_rate: number;
+  new_symbol: string;
+  old_rate: number;
+  old_symbol: string;
+  process_date: string;
+}
+
+export interface RawCashMerger {
+  acquiree_symbol: string;
+  acquirer_symbol: string;
+  effective_date: string;
+  process_date: string;
+  rate: number;
+}
+
+export interface RawStockMerger {
+  acquiree_rate: number;
+  acquiree_symbol: string;
+  acquirer_rate: number;
+  acquirer_symbol: string;
+  effective_date: string;
+  payable_date: string;
+  process_date: string;
+}
+
+export interface RawStockAndCashMerger extends RawStockMerger {
+  cash_rate: number;
+}
+
+export interface RawStockDividends {
+  ex_date: string;
+  payable_date: string;
+  process_date: string;
+  rate: number;
+  record_date: string;
+  symbol: string;
+}
+
+export interface RawRedemption {
+  payable_date: string;
+  process_date: string;
+  rate: number;
+  symbol: string;
+}
+
+export interface RawSpinOff {
+  ex_date: string;
+  new_rate: number;
+  new_symbol: string;
+  process_date: string;
+  record_date: string;
+  rate: number;
+  source_rate: number;
+  source_symbol: string;
+}
+
+export interface RawNameChange {
+  new_symbol: string;
+  old_symbol: string;
+  process_date: string;
+}
+
+export interface RawWorthlessRemoval {
+  symbol: string;
+  process_date: string;
+}
+
+export interface RawRightsDistribution {
+  source_symbol: string;
+  new_symbol: string;
+  rate: number;
+  process_date: string;
+  ex_date: string;
+  payable_date: string;
+  record_date: string;
+  expiration_date: string;
 }
 
 export interface CorporateActions {
@@ -755,17 +903,6 @@ export interface CorporateActions {
   RightsDistributions: Array<RightsDistribution>;
 }
 
-const cash_dividend_mapping = {
-  ex_date: "ExDate",
-  foreign: "Foreign",
-  payable_date: "PayableDate",
-  process_date: "ProcessDate",
-  rate: "Rate",
-  record_date: "RecordDate",
-  special: "Special",
-  symbol: "Symbol",
-};
-
 export interface CashDividend {
   ExDate: string;
   Foreign: boolean;
@@ -777,16 +914,6 @@ export interface CashDividend {
   Symbol: string;
 }
 
-const reverse_split_mapping = {
-  ex_date: "ExDate",
-  new_rate: "NewRate",
-  old_rate: "OldRate",
-  payable_date: "PayableDate",
-  process_date: "ProcessDate",
-  record_date: "RecordDate",
-  symbol: "Symbol",
-};
-
 export interface ReverseSplit {
   ExDate: string;
   NewRate: number;
@@ -796,17 +923,6 @@ export interface ReverseSplit {
   RecordDate: string;
   Symbol: string;
 }
-
-const forward_split_mapping = {
-  due_bill_redemption_date: "DueBillRedemptionDate",
-  ex_date: "ExDate",
-  new_rate: "NewRate",
-  old_rate: "OldRate",
-  payable_date: "PayableDate",
-  process_date: "ProcessDate",
-  record_date: "RecordDate",
-  symbol: "Symbol",
-};
 
 export interface ForwardSplit {
   DueBillRedemptionDate: string;
@@ -819,17 +935,6 @@ export interface ForwardSplit {
   Symbol: string;
 }
 
-const unit_split_mapping = {
-  alternate_rate: "AlternateRate",
-  alternate_symbol: "AlternateSymbol",
-  effective_date: "EffectiveDate",
-  new_rate: "NewRate",
-  new_symbol: "NewSymbol",
-  old_rate: "OldRate",
-  old_symbol: "OldSymbol",
-  process_date: "ProcessDate",
-};
-
 export interface UnitSplit {
   AlternateRate: number;
   AlternateSymbol: string;
@@ -841,14 +946,6 @@ export interface UnitSplit {
   ProcessDate: string;
 }
 
-const cash_merger_mapping = {
-  acquiree_symbol: "AcquireeSymbol",
-  acquirer_symbol: "AcquirerSymbol",
-  effective_date: "EffectiveDate",
-  process_date: "ProcessDate",
-  rate: "Rate",
-};
-
 export interface CashMerger {
   AcquireeSymbol: string;
   AcquirerSymbol: string;
@@ -856,16 +953,6 @@ export interface CashMerger {
   ProcessDate: string;
   Rate: number;
 }
-
-const stock_merger_mapping = {
-  acquiree_rate: "AcquireeRate",
-  acquiree_symbol: "AcquireeSymbol",
-  acquirer_rate: "AcquirerRate",
-  acquirer_symbol: "AcquirerSymbol",
-  effective_date: "EffectiveDate",
-  payable_date: "PayableDate",
-  process_date: "ProcessDate",
-};
 
 export interface StockMerger {
   AcquireeRate: number;
@@ -877,22 +964,9 @@ export interface StockMerger {
   ProcessDate: string;
 }
 
-const stock_and_cash_merger_mapping = {
-  stock_merger_mapping,
-  cash_rate: "CashRate",
-};
 export interface StockAndCashMerger extends StockMerger {
   CashRate: number;
 }
-
-const stock_dividends_mapping = {
-  ex_date: "ExDate",
-  payable_date: "PayableDate",
-  process_date: "ProcessDate",
-  rate: "Rate",
-  record_date: "RecordDate",
-  symbol: "Symbol",
-};
 
 export interface StockDividends {
   ExDate: string;
@@ -903,29 +977,12 @@ export interface StockDividends {
   Symbol: string;
 }
 
-const redemption_mapping = {
-  payable_date: "PayableDate",
-  process_date: "ProcessDate",
-  rate: "Rate",
-  symbol: "Symbol",
-};
-
 export interface Redemption {
   PayableDate: string;
   ProcessDate: string;
   Rate: number;
   Symbol: string;
 }
-
-const spin_off_mapping = {
-  ex_date: "ExDate",
-  new_rate: "NewRate",
-  new_symbol: "NewSymbol",
-  process_date: "ProcessDate",
-  record_date: "RecordDate",
-  source_rate: "Rate",
-  source_symbol: "SourceSymbol",
-};
 
 export interface SpinOff {
   ExDate: string;
@@ -937,38 +994,16 @@ export interface SpinOff {
   SourceSymbol: string;
 }
 
-const name_change_mapping = {
-  new_symbol: "NewSymbol",
-  old_symbol: "OldSymbol",
-  process_date: "ProcessDate",
-};
-
 export interface NameChange {
   NewSymbol: string;
   OldSymbol: string;
   ProcessDate: string;
 }
 
-const worthless_removal_mapping = {
-  symbol: "Symbol",
-  process_date: "ProcessDate",
-};
-
 export interface WorthlessRemoval {
   Symbol: string;
   ProcessDate: string;
 }
-
-const rights_distribution_mapping = {
-  source_symbol: "SourceSymbol",
-  new_symbol: "NewSymbol",
-  rate: "Rate",
-  process_date: "ProcessDate",
-  ex_date: "ExDate",
-  payable_date: "PayableDate",
-  record_date: "RecordDate",
-  expiration_date: "ExpirationDate",
-};
 
 export interface RightsDistribution {
   SourceSymbol: string;
@@ -981,100 +1016,194 @@ export interface RightsDistribution {
   ExpirationDate: string;
 }
 
-export function convertCorporateActions(data: any): CorporateActions {
-  let cas = {} as CorporateActions;
-  if (data.cash_dividends?.length > 0) {
-    cas.CashDividends = cas.CashDividends ? cas.CashDividends : Array<CashDividend>();
-    data.cash_dividends.forEach((cd: any) => {
-      cas.CashDividends.push(aliasObjectKey(cd, cash_dividend_mapping) as CashDividend);
+export function convertCorporateActions(
+  data: RawCorporateActions
+): CorporateActions {
+  const cas = {} as CorporateActions;
+
+  if (data.cash_dividends?.length) {
+    cas.CashDividends ??= Array<CashDividend>();
+
+    data.cash_dividends.forEach((cd) => {
+      cas.CashDividends.push({
+        ExDate: cd.ex_date,
+        Foreign: cd.foreign,
+        PayableDate: cd.payable_date,
+        ProcessDate: cd.process_date,
+        Rate: cd.rate,
+        RecordDate: cd.record_date,
+        Special: cd.special,
+        Symbol: cd.symbol,
+      });
     });
   }
-  if (data.reverse_splits?.length > 0) {
-    cas.ReverseSplits = cas.ReverseSplits ? cas.ReverseSplits : Array<ReverseSplit>();
-    data.reverse_splits.forEach((rs: any) => {
-      cas.ReverseSplits.push(aliasObjectKey(rs, reverse_split_mapping) as ReverseSplit);
+  if (data.reverse_splits?.length) {
+    cas.ReverseSplits ??= Array<ReverseSplit>();
+
+    data.reverse_splits.forEach((rs) => {
+      cas.ReverseSplits.push({
+        ExDate: rs.ex_date,
+        NewRate: rs.new_rate,
+        OldRate: rs.old_rate,
+        PayableDate: rs.payable_date,
+        ProcessDate: rs.process_date,
+        RecordDate: rs.record_date,
+        Symbol: rs.symbol,
+      });
     });
   }
-  if (data.forward_splits?.length > 0) {
-    cas.ForwardSplits = cas.ForwardSplits ? cas.ForwardSplits : Array<ForwardSplit>();
-    data.forward_splits.forEach((fs: any) => {
-      cas.ForwardSplits.push(aliasObjectKey(fs, forward_split_mapping) as ForwardSplit);
+  if (data.forward_splits?.length) {
+    cas.ForwardSplits ??= Array<ForwardSplit>();
+
+    data.forward_splits.forEach((fs) => {
+      cas.ForwardSplits.push({
+        DueBillRedemptionDate: fs.due_bill_redemption_date,
+        ExDate: fs.ex_date,
+        NewRate: fs.new_rate,
+        OldRate: fs.old_rate,
+        PayableDate: fs.payable_date,
+        ProcessDate: fs.process_date,
+        RecordDate: fs.record_date,
+        Symbol: fs.symbol,
+      });
     });
   }
-  if (data.unit_splits?.length > 0) {
-    cas.UnitSplits = cas.UnitSplits ? cas.UnitSplits : Array<UnitSplit>();
-    data.unit_splits.forEach((fs: any) => {
-      cas.UnitSplits.push(aliasObjectKey(fs, unit_split_mapping) as UnitSplit);
+  if (data.unit_splits?.length) {
+    cas.UnitSplits ??= Array<UnitSplit>();
+
+    data.unit_splits.forEach((fs) => {
+      cas.UnitSplits.push({
+        AlternateRate: fs.alternate_rate,
+        AlternateSymbol: fs.alternate_symbol,
+        EffectiveDate: fs.effective_date,
+        NewRate: fs.new_rate,
+        NewSymbol: fs.new_symbol,
+        OldRate: fs.old_rate,
+        OldSymbol: fs.old_symbol,
+        ProcessDate: fs.process_date,
+      });
     });
   }
-  if (data.cash_mergers?.length > 0) {
-    cas.CashMergers = cas.CashMergers ? cas.CashMergers : Array<CashMerger>();
-    data.cash_mergers.forEach((cm: any) => {
-      cas.CashMergers.push(aliasObjectKey(cm, cash_merger_mapping) as CashMerger);
+  if (data.cash_mergers?.length) {
+    cas.CashMergers ??= Array<CashMerger>();
+
+    data.cash_mergers.forEach((cm) => {
+      cas.CashMergers.push({
+        AcquireeSymbol: cm.acquiree_symbol,
+        AcquirerSymbol: cm.acquirer_symbol,
+        EffectiveDate: cm.effective_date,
+        ProcessDate: cm.process_date,
+        Rate: cm.rate,
+      });
     });
   }
-  if (data.stock_mergers?.length > 0) {
-    cas.StockMergers = cas.StockMergers ? cas.StockMergers : Array<StockMerger>();
-    data.stock_mergers.forEach((sm: any) => {
-      cas.StockMergers.push(aliasObjectKey(sm, stock_merger_mapping) as StockMerger);
+  if (data.stock_mergers?.length) {
+    cas.StockMergers ??= Array<StockMerger>();
+
+    data.stock_mergers.forEach((sm) => {
+      cas.StockMergers.push({
+        AcquireeRate: sm.acquiree_rate,
+        AcquireeSymbol: sm.acquiree_symbol,
+        AcquirerRate: sm.acquirer_rate,
+        AcquirerSymbol: sm.acquirer_symbol,
+        EffectiveDate: sm.effective_date,
+        PayableDate: sm.payable_date,
+        ProcessDate: sm.process_date,
+      });
     });
   }
-  if (data.stock_and_cash_mergers?.length > 0) {
-    cas.StockAndCashMerger = cas.StockAndCashMerger
-      ? cas.StockAndCashMerger
-      : Array<StockAndCashMerger>();
-    data.stock_and_cash_mergers.forEach((scm: any) => {
-      cas.StockAndCashMerger.push(
-        aliasObjectKey(scm, stock_and_cash_merger_mapping) as StockAndCashMerger
-      );
+  if (data.stock_and_cash_mergers?.length) {
+    cas.StockAndCashMerger ??= Array<StockAndCashMerger>();
+
+    data.stock_and_cash_mergers.forEach((scm) => {
+      cas.StockAndCashMerger.push({
+        AcquireeRate: scm.acquiree_rate,
+        AcquireeSymbol: scm.acquiree_symbol,
+        AcquirerRate: scm.acquirer_rate,
+        AcquirerSymbol: scm.acquirer_symbol,
+        EffectiveDate: scm.effective_date,
+        PayableDate: scm.payable_date,
+        ProcessDate: scm.process_date,
+        CashRate: scm.cash_rate,
+      });
     });
   }
-  if (data.stock_dividends?.length > 0) {
-    cas.StockDividends = cas.StockDividends
-      ? cas.StockDividends
-      : Array<StockDividends>();
-    data.stock_dividends.forEach((sd: any) => {
-      cas.StockDividends.push(
-        aliasObjectKey(sd, stock_dividends_mapping) as StockDividends
-      );
+  if (data.stock_dividends?.length) {
+    cas.StockDividends ??= Array<StockDividends>();
+
+    data.stock_dividends.forEach((sd) => {
+      cas.StockDividends.push({
+        ExDate: sd.ex_date,
+        PayableDate: sd.payable_date,
+        ProcessDate: sd.process_date,
+        Rate: sd.rate,
+        RecordDate: sd.record_date,
+        Symbol: sd.symbol,
+      });
     });
   }
-  if (data.redemptions?.length > 0) {
-    cas.Redemptions = cas.Redemptions ? cas.Redemptions : Array<Redemption>();
-    data.redemptions.forEach((r: any) => {
-      cas.Redemptions.push(aliasObjectKey(r, redemption_mapping) as Redemption);
+  if (data.redemptions?.length) {
+    cas.Redemptions ??= Array<Redemption>();
+
+    data.redemptions.forEach((r) => {
+      cas.Redemptions.push({
+        PayableDate: r.payable_date,
+        ProcessDate: r.process_date,
+        Rate: r.rate,
+        Symbol: r.symbol,
+      });
     });
   }
-  if (data.spin_offs?.length > 0) {
-    cas.SpinOffs = cas.SpinOffs ? cas.SpinOffs : Array<SpinOff>();
-    data.spin_offs.forEach((so: any) => {
-      cas.SpinOffs.push(aliasObjectKey(so, spin_off_mapping) as SpinOff);
+  if (data.spin_offs?.length) {
+    cas.SpinOffs ??= Array<SpinOff>();
+    data.spin_offs.forEach((so) => {
+      cas.SpinOffs.push({
+        ExDate: so.ex_date,
+        NewRate: so.new_rate,
+        NewSymbol: so.new_symbol,
+        ProcessDate: so.process_date,
+        RecordDate: so.record_date,
+        Rate: so.source_rate,
+        SourceSymbol: so.source_symbol,
+      });
     });
   }
-  if (data.name_changes?.length > 0) {
+  if (data.name_changes?.length) {
     cas.NameChanges = cas.NameChanges ? cas.NameChanges : Array<NameChange>();
-    data.name_changes.forEach((nc: any) => {
-      cas.NameChanges.push(aliasObjectKey(nc, name_change_mapping) as NameChange);
+    data.name_changes.forEach((nc) => {
+      cas.NameChanges.push({
+        NewSymbol: nc.new_symbol,
+        OldSymbol: nc.old_symbol,
+        ProcessDate: nc.process_date,
+      });
     });
   }
-  if (data.worthless_removals?.length > 0) {
+  if (data.worthless_removals?.length) {
     cas.WorthlessRemovals = cas.WorthlessRemovals
       ? cas.WorthlessRemovals
       : Array<WorthlessRemoval>();
-    data.worthless_removals.forEach((wr: any) => {
-      cas.WorthlessRemovals.push(
-        aliasObjectKey(wr, worthless_removal_mapping) as WorthlessRemoval
-      );
+    data.worthless_removals.forEach((wr) => {
+      cas.WorthlessRemovals.push({
+        Symbol: wr.symbol,
+        ProcessDate: wr.process_date,
+      });
     });
   }
-  if (data.rights_distributions?.length > 0) {
+  if (data.rights_distributions?.length) {
     cas.RightsDistributions = cas.RightsDistributions
       ? cas.RightsDistributions
       : Array<RightsDistribution>();
-    data.rights_distributions.forEach((rd: any) => {
-      cas.RightsDistributions.push(
-        aliasObjectKey(rd, rights_distribution_mapping) as RightsDistribution
-      );
+    data.rights_distributions.forEach((rd) => {
+      cas.RightsDistributions.push({
+        SourceSymbol: rd.source_symbol,
+        NewSymbol: rd.new_symbol,
+        Rate: rd.rate,
+        ProcessDate: rd.process_date,
+        ExDate: rd.ex_date,
+        PayableDate: rd.payable_date,
+        RecordDate: rd.record_date,
+        ExpirationDate: rd.expiration_date,
+      });
     });
   }
   return cas;
@@ -1108,7 +1237,9 @@ export function mergeCorporateActions(
     Redemptions: (ca1.Redemptions || []).concat(ca2.Redemptions || []),
     SpinOffs: (ca1.SpinOffs || []).concat(ca2.SpinOffs || []),
     NameChanges: (ca1.NameChanges || []).concat(ca2.NameChanges || []),
-    WorthlessRemovals: (ca1.WorthlessRemovals || []).concat(ca2.WorthlessRemovals || []),
+    WorthlessRemovals: (ca1.WorthlessRemovals || []).concat(
+      ca2.WorthlessRemovals || []
+    ),
     RightsDistributions: (ca1.RightsDistributions || []).concat(
       ca2.RightsDistributions || []
     ),

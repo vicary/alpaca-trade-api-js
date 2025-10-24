@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {
   AlpacaBar,
   AlpacaBarV2,
@@ -27,7 +29,6 @@ import {
   CryptoQuote,
   CryptoSnapshot,
   CryptoTrade,
-  RawAlpacaNews,
   convertCorporateActions,
   getCorporateActionsSize,
   mergeCorporateActions,
@@ -259,35 +260,20 @@ export async function* getTrades(
   }
 }
 
-export async function getMultiTrades(
-  symbols: Array<string>,
-  options: GetTradesParams,
-  config: HttpRequestConfig
-): Promise<Map<string, AlpacaTrade[]>> {
-  const multiTrades = getMultiTradesAsync(symbols, options, config);
-  const trades = new Map<string, Array<AlpacaTrade>>();
-  for await (const t of multiTrades) {
-    const items = trades.get(t.Symbol) || new Array<AlpacaTrade>();
-    trades.set(t.Symbol, [...items, t]);
-  }
-  return trades;
-}
-
-export async function* getMultiTradesAsync(
-  symbols: Array<string>,
+export async function* getMultiTrades(
+  symbols: string | string[],
   options: GetTradesParams,
   config: HttpRequestConfig
 ): AsyncGenerator<AlpacaTrade, void, unknown> {
   const multiTrades = getMultiDataV2(
-    symbols,
+    Array.isArray(symbols) ? symbols : [symbols],
     "/v2/stocks/",
     TYPE.TRADES,
     options,
     config
   );
   for await (const t of multiTrades) {
-    t.data = { ...t.data, S: t.symbol };
-    yield AlpacaTradeV2(t.data);
+    yield AlpacaTradeV2({ S: t.symbol, ...t.data });
   }
 }
 
@@ -318,35 +304,20 @@ export async function* getQuotes(
   }
 }
 
-export async function getMultiQuotes(
-  symbols: Array<string>,
-  options: GetQuotesParams,
-  config: HttpRequestConfig
-): Promise<Map<string, AlpacaQuote[]>> {
-  const multiQuotes = getMultiQuotesAsync(symbols, options, config);
-  const quotes = new Map<string, Array<AlpacaQuote>>();
-  for await (const q of multiQuotes) {
-    const items = quotes.get(q.Symbol) || new Array<AlpacaQuote>();
-    quotes.set(q.Symbol, [...items, q]);
-  }
-  return quotes;
-}
-
-export async function* getMultiQuotesAsync(
-  symbols: Array<string>,
+export async function* getMultiQuotes(
+  symbols: string | string[],
   options: GetQuotesParams,
   config: HttpRequestConfig
 ): AsyncGenerator<AlpacaQuote, void, unknown> {
   const multiQuotes = getMultiDataV2(
-    symbols,
+    Array.isArray(symbols) ? symbols : [symbols],
     "/v2/stocks/",
     TYPE.QUOTES,
     options,
     config
   );
   for await (const q of multiQuotes) {
-    q.data = { ...q.data, S: q.symbol };
-    yield AlpacaQuoteV2(q.data);
+    yield AlpacaQuoteV2({ S: q.symbol, ...q.data });
   }
 }
 
@@ -374,41 +345,25 @@ export async function* getBars(
     options,
     config
   );
-
   for await (const bar of bars || []) {
-    yield AlpacaBarV2(bar);
+    yield AlpacaBarV2({ S: symbol, ...bar });
   }
 }
 
-export async function getMultiBars(
-  symbols: Array<string>,
-  options: GetBarsParams,
-  config: HttpRequestConfig
-): Promise<Map<string, AlpacaBar[]>> {
-  const multiBars = getMultiBarsAsync(symbols, options, config);
-  const bars = new Map<string, Array<AlpacaBar>>();
-  for await (const b of multiBars) {
-    const items = bars.get(b.Symbol) || new Array<AlpacaBar>();
-    bars.set(b.Symbol, [...items, b]);
-  }
-  return bars;
-}
-
-export async function* getMultiBarsAsync(
-  symbols: Array<string>,
+export async function* getMultiBars(
+  symbols: string | string[],
   options: GetBarsParams,
   config: HttpRequestConfig
 ): AsyncGenerator<AlpacaBar, void, unknown> {
   const multiBars = getMultiDataV2(
-    symbols,
+    Array.isArray(symbols) ? symbols : [symbols],
     "/v2/stocks/",
     TYPE.BARS,
     options,
     config
   );
   for await (const b of multiBars) {
-    b.data = { ...b.data, S: b.symbol };
-    yield AlpacaBarV2(b.data);
+    yield AlpacaBarV2({ S: b.symbol, ...b.data });
   }
 }
 
@@ -424,24 +379,18 @@ export async function getLatestTrade(
   return AlpacaTradeV2(resp.trade);
 }
 
-export async function getLatestTrades(
-  symbols: Array<string>,
+export async function* getLatestTrades(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, AlpacaTrade>> {
+): AsyncGenerator<AlpacaTrade, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v2/stocks/${TYPE.TRADES}/latest`,
-    { symbols: symbols.join(",") },
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
-  const multiLatestTrades = resp.trades;
-  const multiLatestTradesResp = new Map<string, AlpacaTrade>();
-  for (const symbol in multiLatestTrades) {
-    multiLatestTradesResp.set(
-      symbol,
-      AlpacaTradeV2({ S: symbol, ...multiLatestTrades[symbol] })
-    );
+  for (const symbol in resp.trades) {
+    yield AlpacaTradeV2({ S: symbol, ...resp.trades[symbol] });
   }
-  return multiLatestTradesResp;
 }
 
 export async function getLatestQuote(
@@ -456,24 +405,18 @@ export async function getLatestQuote(
   return AlpacaQuoteV2(resp.quote);
 }
 
-export async function getLatestQuotes(
-  symbols: Array<string>,
+export async function* getLatestQuotes(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, AlpacaQuote>> {
+): AsyncGenerator<AlpacaQuote, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v2/stocks/${TYPE.QUOTES}/latest`,
-    { symbols: symbols.join(",") },
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
-  const multiLatestQuotes = resp.quotes;
-  const multiLatestQuotesResp = new Map<string, AlpacaQuote>();
-  for (const symbol in multiLatestQuotes) {
-    multiLatestQuotesResp.set(
-      symbol,
-      AlpacaQuoteV2({ S: symbol, ...multiLatestQuotes[symbol] })
-    );
+  for (const symbol in resp.quotes) {
+    yield AlpacaQuoteV2({ S: symbol, ...resp.quotes[symbol] });
   }
-  return multiLatestQuotesResp;
 }
 
 export async function getLatestBar(
@@ -488,24 +431,18 @@ export async function getLatestBar(
   return AlpacaBarV2(resp.bar);
 }
 
-export async function getLatestBars(
-  symbols: Array<string>,
+export async function* getLatestBars(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, AlpacaBar>> {
+): AsyncGenerator<AlpacaBar, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v2/stocks/${TYPE.BARS}/latest`,
-    { symbols: symbols.join(",") },
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
-  const multiLatestBars = resp.bars;
-  const multiLatestBarsResp = new Map<string, AlpacaBar>();
-  for (const symbol in multiLatestBars) {
-    multiLatestBarsResp.set(
-      symbol,
-      AlpacaBarV2({ S: symbol, ...multiLatestBars[symbol] })
-    );
+  for (const symbol in resp.bars) {
+    yield AlpacaBarV2({ S: symbol, ...resp.bars[symbol] });
   }
-  return multiLatestBarsResp;
 }
 
 export async function getSnapshot(
@@ -521,21 +458,20 @@ export async function getSnapshot(
   return AlpacaSnapshotV2(resp);
 }
 
-export async function getSnapshots(
-  symbols: Array<string>,
+export async function* getSnapshots(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<AlpacaSnapshot[]> {
-  const resp = await dataV2HttpRequest(
-    `/v2/stocks/snapshots?symbols=${symbols.join(",")}`,
+): AsyncGenerator<AlpacaSnapshot, void, unknown> {
+  const snapshots = await dataV2HttpRequest(
+    `/v2/stocks/snapshots?symbols=${
+      Array.isArray(symbols) ? symbols.join(",") : symbols
+    }`,
     {},
     config
   );
-  const result = Object.entries(resp as Map<string, unknown>).map(
-    ([key, val]) => {
-      return AlpacaSnapshotV2({ symbol: key, ...val });
-    }
-  );
-  return result;
+  for (const [symbol, snapshot] of Object.entries<any>(snapshots)) {
+    yield AlpacaSnapshotV2({ symbol: symbol, ...snapshot });
+  }
 }
 
 export interface GetCryptoTradesParams {
@@ -546,25 +482,21 @@ export interface GetCryptoTradesParams {
   sort?: Sort;
 }
 
-export async function getCryptoTrades(
-  symbols: string[],
+export async function* getCryptoTrades(
+  symbols: string | string[],
   options: GetCryptoTradesParams,
   config: HttpRequestConfig
-): Promise<Map<string, CryptoTrade[]>> {
+): AsyncGenerator<CryptoTrade, void, unknown> {
   const cryptoTrades = getMultiDataV2(
-    symbols,
+    Array.isArray(symbols) ? symbols : [symbols],
     "/v1beta3/crypto/us/",
     TYPE.TRADES,
     options,
     config
   );
-  const trades = new Map<string, Array<CryptoTrade>>();
   for await (const t of cryptoTrades) {
-    const items = trades.get(t.symbol) || new Array<CryptoTrade>();
-    trades.set(t.symbol, [...items, AlpacaCryptoTrade(t.data)]);
+    yield AlpacaCryptoTrade({ S: t.symbol, ...t.data });
   }
-
-  return trades;
 }
 
 export interface GetCryptoQuotesParams {
@@ -575,25 +507,22 @@ export interface GetCryptoQuotesParams {
   sort?: Sort;
 }
 
-export async function getCryptoQuotes(
-  symbols: string[],
+export async function* getCryptoQuotes(
+  symbols: string | string[],
   options: GetCryptoQuotesParams,
   config: HttpRequestConfig
-): Promise<Map<string, CryptoQuote[]>> {
+): AsyncGenerator<CryptoQuote, void, unknown> {
   const cryptoQuotes = getMultiDataV2(
-    symbols,
+    Array.isArray(symbols) ? symbols : [symbols],
     "/v1beta3/crypto/us/",
     TYPE.QUOTES,
     options,
     config
   );
-  const quotes = new Map<string, Array<CryptoQuote>>();
-  for await (const t of cryptoQuotes) {
-    const items = quotes.get(t.symbol) || new Array<CryptoQuote>();
-    quotes.set(t.symbol, [...items, AlpacaCryptoQuote(t.data)]);
-  }
 
-  return quotes;
+  for await (const t of cryptoQuotes) {
+    yield AlpacaCryptoQuote({ S: t.symbol, ...t.data });
+  }
 }
 
 export interface GetCryptoBarsParams {
@@ -605,125 +534,96 @@ export interface GetCryptoBarsParams {
   sort?: Sort;
 }
 
-export async function getCryptoBars(
-  symbols: string[],
+export async function* getCryptoBars(
+  symbol: string | string[],
   options: GetCryptoBarsParams,
   config: HttpRequestConfig
-): Promise<Map<string, CryptoBar[]>> {
+): AsyncGenerator<CryptoBar, void, unknown> {
   const cryptoBars = getMultiDataV2(
-    symbols,
+    Array.isArray(symbol) ? symbol : [symbol],
     "/v1beta3/crypto/us/",
     TYPE.BARS,
     options,
     config
   );
-  const bars = new Map<string, Array<CryptoBar>>();
   for await (const t of cryptoBars) {
-    const items = bars.get(t.symbol) || new Array<CryptoBar>();
-    bars.set(t.symbol, [...items, AlpacaCryptoBar(t.data)]);
+    yield AlpacaCryptoBar({ T: "b", S: t.symbol, ...t.data });
   }
-  return bars;
 }
 
-export async function getLatestCryptoBars(
-  symbols: Array<string>,
+export async function* getLatestCryptoBars(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, CryptoBar>> {
-  const params = { symbols: symbols.join(",") };
+): AsyncGenerator<CryptoBar, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v1beta3/crypto/us/latest/bars`,
-    params,
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
 
-  const multiLatestCryptoBars = resp.bars;
-  const result = new Map<string, CryptoBar>();
-  for (const symbol in multiLatestCryptoBars) {
-    const bar = multiLatestCryptoBars[symbol];
-    result.set(symbol, AlpacaCryptoBar(bar));
+  for (const [symbol, bar] of Object.entries<any>(resp.bars)) {
+    yield AlpacaCryptoBar({ T: "b", S: symbol, ...bar });
   }
-
-  return result;
 }
 
-export async function getLatestCryptoTrades(
-  symbols: Array<string>,
+export async function* getLatestCryptoTrades(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, CryptoTrade>> {
-  const params = { symbols: symbols.join(",") };
+): AsyncGenerator<CryptoTrade, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v1beta3/crypto/us/latest/trades`,
-    params,
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
 
-  const multiLatestCryptoTrades = resp.trades;
-  const result = new Map<string, CryptoTrade>();
-  for (const symbol in multiLatestCryptoTrades) {
-    const trade = multiLatestCryptoTrades[symbol];
-    result.set(symbol, AlpacaCryptoTrade(trade));
+  for (const [symbol, trade] of Object.entries<any>(resp.trades)) {
+    yield AlpacaCryptoTrade({ T: "t", S: symbol, ...trade });
   }
-
-  return result;
 }
 
-export async function getLatestCryptoQuotes(
-  symbols: Array<string>,
+export async function* getLatestCryptoQuotes(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, CryptoQuote>> {
-  const params = { symbols: symbols.join(",") };
+): AsyncGenerator<CryptoQuote, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v1beta3/crypto/us/latest/quotes`,
-    params,
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
 
-  const multiLatestCryptoQuotes = resp.quotes;
-  const result = new Map<string, CryptoQuote>();
-  for (const symbol in multiLatestCryptoQuotes) {
-    const quote = multiLatestCryptoQuotes[symbol];
-    result.set(symbol, AlpacaCryptoQuote(quote));
+  for (const [symbol, quote] of Object.entries<any>(resp.quotes)) {
+    yield AlpacaCryptoQuote({ T: "q", S: symbol, ...quote });
   }
-
-  return result;
 }
 
-export async function getCryptoSnapshots(
-  symbols: Array<string>,
+export async function* getCryptoSnapshots(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, CryptoSnapshot>> {
-  const params = { symbols: symbols.join(",") };
+): AsyncGenerator<CryptoSnapshot, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v1beta3/crypto/us/snapshots`,
-    params,
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
-  const snapshots = resp.snapshots;
-  const result = new Map<string, CryptoSnapshot>();
-  for (const symbol in snapshots) {
-    const snapshot = snapshots[symbol];
-    result.set(symbol, AlpacaCryptoSnapshot(snapshot));
+
+  for (const [symbol, snapshot] of Object.entries<any>(resp.snapshots)) {
+    yield AlpacaCryptoSnapshot({ symbol, ...snapshot });
   }
-  return result;
 }
 
-export async function getLatestCryptoOrderbooks(
-  symbols: Array<string>,
+export async function* getLatestCryptoOrderbooks(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, CryptoOrderbook>> {
-  const params = { symbols: symbols.join(",") };
+): AsyncGenerator<CryptoOrderbook, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v1beta3/crypto/us/latest/orderbooks`,
-    params,
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
-  const orderbooks = resp.orderbooks;
-  const result = new Map<string, CryptoOrderbook>();
-  for (const symbol in orderbooks) {
-    const orderbook = orderbooks[symbol];
-    result.set(symbol, AlpacaCryptoOrderbook(orderbook));
+
+  for (const [symbol, orderbook] of Object.entries<any>(resp.orderbooks)) {
+    yield AlpacaCryptoOrderbook({ S: symbol, ...orderbook });
   }
-  return result;
 }
 
 export enum Sort {
@@ -770,10 +670,10 @@ function getNewsParams(options: GetNewsParams) {
   return query;
 }
 
-export async function getNews(
+export async function* getNews(
   options: GetNewsParams,
   config: HttpRequestConfig
-): Promise<AlpacaNews[]> {
+): AsyncGenerator<AlpacaNews, void, unknown> {
   if (options.totalLimit && options.totalLimit < 0) {
     throw new Error("negative total limit");
   }
@@ -788,7 +688,6 @@ export async function getNews(
     : V2_NEWS_MAX_LIMIT;
   delete options?.pageLimit;
   const totalLimit = options.totalLimit ?? 10;
-  const result: AlpacaNews[] = [];
   const params = getNewsParams(options);
   let limit;
   for (;;) {
@@ -802,14 +701,15 @@ export async function getNews(
       { ...params, limit: limit, page_token: pageToken },
       config
     );
-    resp.news.forEach((n: RawAlpacaNews) => result.push(AlpacaNews(n)));
+    for (const news of resp.news) {
+      yield AlpacaNews(news);
+    }
     received += resp.news.length;
     pageToken = resp.next_page_token;
     if (!pageToken) {
       break;
     }
   }
-  return result;
 }
 
 export interface GetOptionBarsParams {
@@ -823,38 +723,20 @@ export interface GetOptionBarsParams {
   sort?: Sort;
 }
 
-export async function getMultiOptionBars(
-  symbols: Array<string>,
-  options: GetOptionBarsParams,
-  config: HttpRequestConfig
-): Promise<Map<string, AlpacaOptionBar[]>> {
-  const multiBars = getMultiOptionBarsAsync(symbols, options, config);
-  const bars = new Map<string, Array<AlpacaOptionBar>>();
-  for await (const b of multiBars) {
-    // symbol will always have a value
-    const symbol = b.Symbol ? b.Symbol : "";
-    delete b.Symbol;
-    const items = bars.get(symbol) || new Array<AlpacaOptionBar>();
-    bars.set(symbol, [...items, b]);
-  }
-  return bars;
-}
-
-export async function* getMultiOptionBarsAsync(
-  symbols: Array<string>,
+export async function* getMultiOptionBars(
+  symbols: string | Array<string>,
   options: GetOptionBarsParams,
   config: HttpRequestConfig
 ): AsyncGenerator<AlpacaOptionBar, void, unknown> {
   const multiBars = getMultiDataV2(
-    symbols,
+    Array.isArray(symbols) ? symbols : [symbols],
     "/v1beta1/options/",
     TYPE.BARS,
     options,
     config
   );
   for await (const b of multiBars) {
-    b.data = { ...b.data, S: b.symbol };
-    yield AlpacaOptionBarV1Beta1(b.data);
+    yield AlpacaOptionBarV1Beta1({ S: b.symbol, ...b.data });
   }
 }
 
@@ -868,96 +750,65 @@ export interface GetOptionTradesParams {
   sort?: Sort;
 }
 
-export async function getMultiOptionTrades(
-  symbols: Array<string>,
-  options: GetOptionTradesParams,
-  config: HttpRequestConfig
-): Promise<Map<string, AlpacaOptionTrade[]>> {
-  const multiTrades = getMultiOptionTradesAsync(symbols, options, config);
-  const trades = new Map<string, Array<AlpacaOptionTrade>>();
-  for await (const t of multiTrades) {
-    // symbol will always have a value
-    const symbol = t.Symbol ? t.Symbol : "";
-    delete t.Symbol;
-    const items = trades.get(symbol) || new Array<AlpacaOptionTrade>();
-    trades.set(symbol, [...items, t]);
-  }
-  return trades;
-}
-
-export async function* getMultiOptionTradesAsync(
-  symbols: Array<string>,
+export async function* getMultiOptionTrades(
+  symbols: string | string[],
   options: GetOptionTradesParams,
   config: HttpRequestConfig
 ): AsyncGenerator<AlpacaOptionTrade, void, unknown> {
   const multiBars = getMultiDataV2(
-    symbols,
+    Array.isArray(symbols) ? symbols : [symbols],
     "/v1beta1/options/",
     TYPE.TRADES,
     options,
     config
   );
   for await (const b of multiBars) {
-    b.data = { ...b.data, S: b.symbol };
-    yield AlpacaOptionTradeV1Beta1(b.data);
+    yield AlpacaOptionTradeV1Beta1({ S: b.symbol, ...b.data });
   }
 }
 
-export async function getLatestOptionTrades(
-  symbols: Array<string>,
+export async function* getLatestOptionTrades(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, AlpacaOptionTrade>> {
+): AsyncGenerator<AlpacaOptionTrade, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v1beta1/options/${TYPE.TRADES}/latest`,
-    { symbols: symbols.join(",") },
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
-  const multiLatestTrades = resp.trades;
-  const multiLatestTradesResp = new Map<string, AlpacaOptionTrade>();
-  for (const symbol in multiLatestTrades) {
-    multiLatestTradesResp.set(
-      symbol,
-      AlpacaOptionTradeV1Beta1({ ...multiLatestTrades[symbol] })
-    );
+  for (const symbol in resp.trades) {
+    yield AlpacaOptionTradeV1Beta1({ S: symbol, ...resp.trades[symbol] });
   }
-  return multiLatestTradesResp;
 }
 
-export async function getLatestOptionQuotes(
-  symbols: Array<string>,
+export async function* getLatestOptionQuotes(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<Map<string, AlpacaOptionQuote>> {
+): AsyncGenerator<AlpacaOptionQuote, void, unknown> {
   const resp = await dataV2HttpRequest(
     `/v1beta1/options/${TYPE.QUOTES}/latest`,
-    { symbols: symbols.join(",") },
+    { symbols: Array.isArray(symbols) ? symbols.join(",") : symbols },
     config
   );
-  const multiLatestQuotes = resp.quotes;
-  const multiLatestQuotesResp = new Map<string, AlpacaOptionQuote>();
-  for (const symbol in multiLatestQuotes) {
-    multiLatestQuotesResp.set(
-      symbol,
-      AlpacaOptionQuoteV1Beta1({ ...multiLatestQuotes[symbol] })
-    );
+  for (const symbol in resp.quotes) {
+    yield AlpacaOptionQuoteV1Beta1({ S: symbol, ...resp.quotes[symbol] });
   }
-  return multiLatestQuotesResp;
 }
 
-export async function getOptionSnapshots(
-  symbols: Array<string>,
+export async function* getOptionSnapshots(
+  symbols: string | string[],
   config: HttpRequestConfig
-): Promise<AlpacaOptionSnapshot[]> {
+): AsyncGenerator<AlpacaOptionSnapshot, void, unknown> {
   const resp = await dataV2HttpRequest(
-    `/v1beta1/options/snapshots?symbols=${symbols.join(",")}`,
+    `/v1beta1/options/snapshots?symbols=${
+      Array.isArray(symbols) ? symbols.join(",") : symbols
+    }`,
     {},
     config
   );
-  const result = Object.entries(resp.snapshots as Map<string, any>).map(
-    ([key, val]) => {
-      return AlpacaOptionSnapshotV1Beta1({ Symbol: key, ...val });
-    }
-  );
-  return result;
+  for (const [key, val] of Object.entries<any>(resp.snapshots)) {
+    yield AlpacaOptionSnapshotV1Beta1({ Symbol: key, ...val });
+  }
 }
 
 export interface GetOptionChainParams {
@@ -974,11 +825,11 @@ export interface GetOptionChainParams {
   page_token?: string;
 }
 
-export async function getOptionChain(
+export async function* getOptionChain(
   underlyingSymbol: string,
   options: GetOptionChainParams,
   config: HttpRequestConfig
-): Promise<AlpacaOptionSnapshot[]> {
+): AsyncGenerator<AlpacaOptionSnapshot, void, unknown> {
   if (options.totalLimit && options.totalLimit < 0) {
     throw new Error("negative total limit");
   }
@@ -993,7 +844,6 @@ export async function getOptionChain(
   delete options.pageLimit;
   const totalLimit = options?.totalLimit ?? 10000;
   delete options.totalLimit;
-  const result = [] as AlpacaOptionSnapshot[];
   let limit;
   for (;;) {
     limit = getQueryLimit(totalLimit, pageLimit, received);
@@ -1006,20 +856,16 @@ export async function getOptionChain(
       config
     );
 
-    const res = Object.entries(resp.snapshots as Map<string, any>).map(
-      ([key, val]) => {
-        return AlpacaOptionSnapshotV1Beta1({ Symbol: key, ...val });
-      }
-    );
-    received = received + res.length;
-    result.push(...res);
+    for (const [key, val] of Object.entries<any>(resp.snapshots)) {
+      yield AlpacaOptionSnapshotV1Beta1({ Symbol: key, ...val });
+    }
+    received = received + resp.snapshots.length;
 
     pageToken = resp.next_page_token;
     if (!pageToken) {
       break;
     }
   }
-  return result;
 }
 
 export interface GetCorporateActionParams {
@@ -1033,7 +879,7 @@ export interface GetCorporateActionParams {
 }
 
 export async function getCorporateActions(
-  symbols: Array<string>,
+  symbols: string | string[],
   options: GetCorporateActionParams,
   config: HttpRequestConfig
 ): Promise<CorporateActions | undefined> {
@@ -1054,7 +900,11 @@ export async function getCorporateActions(
   delete options.totalLimit;
   let result = {} as CorporateActions;
   const types = options?.types?.join(",");
-  const params = { ...options, symbols, types };
+  const params = {
+    ...options,
+    symbols: Array.isArray(symbols) ? symbols.join(",") : symbols,
+    types,
+  };
   let limit;
   for (;;) {
     limit = getQueryLimit(totalLimit, pageLimit, received);

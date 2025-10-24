@@ -1,12 +1,16 @@
 "use strict";
 
-const { expect, assert } = require("chai");
-const { isEqual } = require("lodash");
+const { expect, assert, use } = require("chai");
+const {
+  deepCloneIgnoreUndefined,
+} = require("chai-deep-equal-ignore-undefined");
 const entityV2 = require("../../dist/resources/datav2/entityv2");
 
 function assertData(got, expected) {
-  expect(got).have.all.keys(Object.keys(expected));
-  expect(isEqual(got, expected)).to.be.true;
+  const a = deepCloneIgnoreUndefined(got);
+  const b = deepCloneIgnoreUndefined(expected);
+
+  expect(a).to.deep.equal(b);
 }
 
 describe("test convert functions", () => {
@@ -90,6 +94,7 @@ describe("test timeframe", () => {
 
 const data = {
   trade: {
+    S: "AAPL",
     t: "2021-02-08T09:00:19.932405248Z",
     x: "P",
     p: 136.68,
@@ -99,6 +104,7 @@ const data = {
     z: "C",
   },
   quote: {
+    S: "AAPL",
     t: "2021-02-08T09:02:07.837365238Z",
     ax: "P",
     ap: 136.81,
@@ -109,6 +115,7 @@ const data = {
     c: ["R"],
   },
   bar: {
+    S: "AAPL",
     t: "2021-02-08T00:00:00Z",
     o: 136.11,
     h: 134.93,
@@ -163,6 +170,7 @@ const data = {
     },
   },
   cryptoOrderbook: {
+    S: "BTC/USDT",
     t: "2022-04-06T14:19:40.984Z",
     b: [
       { p: 44066.1, s: 0 },
@@ -174,6 +182,8 @@ const data = {
 
 const expected = {
   trade: {
+    T: "t",
+    Symbol: "AAPL",
     Timestamp: "2021-02-08T09:00:19.932405248Z",
     Exchange: "P",
     Price: 136.68,
@@ -183,6 +193,8 @@ const expected = {
     Tape: "C",
   },
   quote: {
+    T: "q",
+    Symbol: "AAPL",
     Timestamp: "2021-02-08T09:02:07.837365238Z",
     AskExchange: "P",
     AskPrice: 136.81,
@@ -193,16 +205,20 @@ const expected = {
     Conditions: ["R"],
   },
   bar: {
+    T: "b",
+    Symbol: "AAPL",
     Timestamp: "2021-02-08T00:00:00Z",
-    OpenPrice: 136.11,
-    HighPrice: 134.93,
-    LowPrice: 136.9,
-    ClosePrice: 136.81,
+    Open: 136.11,
+    High: 134.93,
+    Low: 136.9,
+    Close: 136.81,
     Volume: 31491496,
   },
   snapshot: {
     symbol: "AAPL",
     LatestTrade: {
+      T: "t",
+      Symbol: "AAPL",
       Timestamp: "2021-05-03T19:59:59.898542039Z",
       Exchange: "V",
       Price: 132.55,
@@ -212,6 +228,8 @@ const expected = {
       Tape: "C",
     },
     LatestQuote: {
+      T: "q",
+      Symbol: "AAPL",
       Timestamp: "2021-05-03T21:00:00.006562245Z",
       AskExchange: "V",
       AskPrice: 0,
@@ -222,35 +240,42 @@ const expected = {
       Conditions: ["R"],
     },
     MinuteBar: {
+      T: "b",
+      Symbol: "AAPL",
       Timestamp: "2021-05-03T19:59:00Z",
-      OpenPrice: 132.43,
-      HighPrice: 132.55,
-      LowPrice: 132.43,
-      ClosePrice: 132.55,
+      Open: 132.43,
+      High: 132.55,
+      Low: 132.43,
+      Close: 132.55,
       Volume: 9736,
     },
     DailyBar: {
+      T: "b",
+      Symbol: "AAPL",
       Timestamp: "2021-05-03T04:00:00Z",
-      OpenPrice: 132.04,
-      HighPrice: 134.06,
-      LowPrice: 131.83,
-      ClosePrice: 132.55,
+      Open: 132.04,
+      High: 134.06,
+      Low: 131.83,
+      Close: 132.55,
       Volume: 1364180,
     },
     PrevDailyBar: {
+      T: "b",
+      Symbol: "AAPL",
       Timestamp: "2021-04-30T04:00:00Z",
-      OpenPrice: 131.8,
-      HighPrice: 133.55,
-      LowPrice: 131.07,
-      ClosePrice: 131.44,
+      Open: 131.8,
+      High: 133.55,
+      Low: 131.07,
+      Close: 131.44,
       Volume: 2088793,
     },
   },
   cryptoOrderbook: {
+    T: "o",
     Timestamp: "2022-04-06T14:19:40.984Z",
     Bids: [
-      { Price: 44066.1, Size: 0 },
-      { Price: 44063.4, Size: 1.361635 },
+      { Symbol: "BTC/USDT", Price: 44066.1, Size: 0 },
+      { Symbol: "BTC/USDT", Price: 44063.4, Size: 1.361635 },
     ],
     Asks: [],
   },

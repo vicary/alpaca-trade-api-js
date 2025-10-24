@@ -1,21 +1,21 @@
 import {
   AlpacaCryptoBar,
+  AlpacaCryptoOrderbook,
   AlpacaCryptoQuote,
   AlpacaCryptoTrade,
-  AlpacaCryptoOrderbook,
   CryptoBar,
+  CryptoOrderbook,
   CryptoQuote,
   CryptoTrade,
-  CryptoOrderbook,
-  RawCryptoTrade,
-  RawCryptoQuote,
   RawCryptoBar,
   RawCryptoOrderbook,
+  RawCryptoQuote,
+  RawCryptoTrade,
 } from "./entityv2";
 import {
-  AlpacaWebsocket as Websocket,
-  EVENT,
   ERROR,
+  EVENT,
+  AlpacaWebsocket as Websocket,
   WebsocketOptions,
 } from "./websocket";
 
@@ -224,7 +224,7 @@ export class AlpacaCryptoClient extends Websocket {
   dataHandler(data: Array<RawCryptoData>): void {
     data.forEach((element: RawCryptoData) => {
       if ("T" in element) {
-        const eventType = eventTypeMap.get(element.T);
+        const eventType = eventTypeMap.get(element.T!);
         if (eventType) {
           this.emit(eventType.event, eventType.parse(element));
         } else {

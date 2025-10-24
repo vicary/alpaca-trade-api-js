@@ -5,6 +5,8 @@ const { Alpaca: api } = require("../dist/alpaca-trade-api");
 const mock = require("./support/mock-server");
 
 const tradeKeys = [
+  "T",
+  "Symbol",
   "ID",
   "Exchange",
   "Price",
@@ -15,21 +17,26 @@ const tradeKeys = [
 ];
 
 const quoteKeys = [
+  "T",
+  "Symbol",
   "BidExchange",
   "BidPrice",
   "BidSize",
   "AskExchange",
   "AskPrice",
   "AskSize",
+  "Tape",
   "Timestamp",
   "Conditions",
 ];
 
 const barKeys = [
-  "OpenPrice",
-  "HighPrice",
-  "LowPrice",
-  "ClosePrice",
+  "T",
+  "Symbol",
+  "Open",
+  "High",
+  "Low",
+  "Close",
   "Volume",
   "Timestamp",
   "TradeCount",
@@ -153,85 +160,102 @@ describe("stock API", () => {
   });
 
   it("get snapashots for symbols", async () => {
-    const resp = await alpaca.getSnapshots(["FB", "AAPL"]);
-
+    const resp = [];
+    for await (const s of alpaca.getSnapshots(["FB", "AAPL"])) {
+      resp.push(s);
+    }
     expect(resp.length).equal(2);
+
     resp.map((s) => {
       assertSnapshot(s);
     });
   });
 
-  it("get multi trades with wrong symbols param", async () => {
-    await expect(
-      alpaca.getMultiTradesV2("", {
-        start: "2021-09-01T00:00:00.00Z",
-        end: "2021-09-02T22:00:00Z",
-      })
-    ).to.eventually.be.rejectedWith("symbols.join is not a function");
-  });
-
   it("get multi trades", async () => {
-    const resp = await alpaca.getMultiTradesV2(["AAPL", "FB"], {
+    const symbols = new Set();
+    for await (const t of alpaca.getMultiTradesV2(["AAPL", "FB"], {
       start: "2021-09-01T00:00:00.00Z",
       end: "2021-09-02T22:00:00Z",
-    });
-    let gotSymbols = [];
-    for (let [symbol, trade] of resp) {
-      gotSymbols.push(symbol);
-      assertTrade(trade[0], ["Symbol", ...tradeKeys]);
+    })) {
+      symbols.add(t.Symbol);
     }
-    expect(gotSymbols.length).to.equal(2);
+    expect(symbols.size).to.equal(2);
   });
 
   it("get multi trades async", async () => {
-    const resp = alpaca.getMultiTradesAsyncV2(["AAPL", "FB"], {
+    const resp = [];
+    for await (const t of alpaca.getMultiTradesV2(["AAPL", "FB"], {
       start: "2021-09-01T00:00:00.00Z",
       end: "2021-09-02T22:00:00Z",
-    });
+    })) {
+      resp.push(t);
+    }
     let gotSymbols = new Map();
     for await (let t of resp) {
       gotSymbols.set(t.Symbol, {});
-      assertTrade(t, ["Symbol", ...tradeKeys]);
+      assertTrade(t);
     }
     expect(gotSymbols.size).to.equal(2);
   });
 
   it("get multi quotes async", async () => {
-    const resp = alpaca.getMultiQuotesAsyncV2(["AAPL", "FB"], {
+    const resp = [];
+    for await (const q of alpaca.getMultiQuotesV2(["AAPL", "FB"], {
       start: "2021-08-11T08:30:00.00Z",
       end: "2021-09-12T16:00:00Z",
-    });
+    })) {
+      resp.push(q);
+    }
     let gotSymbols = new Map();
     for await (let q of resp) {
       gotSymbols.set(q.Symbol, {});
-      assertQuote(q, ["Symbol", ...quoteKeys]);
+      assertQuote(q);
     }
     expect(gotSymbols.size).to.equal(2);
   });
 
   it("get multi latest trades", async () => {
-    const resp = await alpaca.getLatestTrades(
+    const resp = [];
+    for await (const trade of alpaca.getLatestTrades(
       ["AAPL", "FB"],
       alpaca.configuration
-    );
+    )) {
+      resp.push(trade);
+    }
 
-    expect(resp.size).equal(2);
-    for (const [s, t] of resp) {
-      assertTrade(t, ["Symbol", ...tradeKeys]);
+    expect(resp.length).equal(2);
+    for (const t of resp) {
+      assertTrade(t);
     }
   });
 
   it("get multi latest bars", async () => {
-    const resp = await alpaca.getLatestBars(["SPY"], alpaca.configuration);
+    const resp = [];
+    for await (const bar of alpaca.getLatestBars(
+      ["SPY"],
+      alpaca.configuration
+    )) {
+      resp.push(bar);
+    }
 
-    expect(resp.size).equal(1);
-    assertBar(resp.get("SPY"), ["Symbol", ...barKeys]);
+    expect(resp.length).equal(1);
+    assertBar(resp[0]);
   });
 });
 
-const cryptoTradeKeys = ["Timestamp", "Price", "Size", "TakerSide", "ID"];
+const cryptoTradeKeys = [
+  "T",
+  "Symbol",
+  "Timestamp",
+  "Price",
+  "Size",
+  "TakerSide",
+  "ID",
+];
 
 const cryptoQuoteKeys = [
+  "T",
+  "Symbol",
   "Timestamp",
   "BidPrice",
   "BidSize",
@@ -240,6 +264,8 @@ const cryptoQuoteKeys = [
 ];
 
 const cryptoBarKeys = [
+  "T",
+  "Symbol",
   "Timestamp",
   "Open",
   "High",
@@ -250,7 +276,7 @@ const cryptoBarKeys = [
   "TradeCount",
 ];
 
-const cryptoOrderbookKeys = ["Timestamp", "Bids", "Asks"];
+const cryptoOrderbookKeys = ["T", "Timestamp", "Bids", "Asks"];
 
 function assertCryptoTrade(trade, keys = cryptoTradeKeys) {
   expect(trade).to.have.all.keys(keys);
@@ -266,6 +292,7 @@ function assertCryptoBar(bar, keys = cryptoBarKeys) {
 
 function assertCryptoSnapshot(snapshot) {
   expect(snapshot).to.have.all.keys([
+    "Symbol",
     "LatestTrade",
     "LatestQuote",
     "MinuteBar",
@@ -291,65 +318,89 @@ describe("crypto API", () => {
   });
 
   it("get latest trades", async () => {
-    const resp = await alpaca.getLatestCryptoTrades(["BTC/USD", "ETH/USD"]);
+    const resp = [];
 
-    expect(resp.size).equal(2);
-    for (const symbol in resp) {
-      assertCryptoTrade(resp[symbol]);
+    for await (const data of alpaca.getLatestCryptoTrades([
+      "BTC/USD",
+      "ETH/USD",
+    ])) {
+      resp.push(data);
+    }
+
+    expect(resp.length).equal(2);
+    for (const trade of resp) {
+      assertCryptoTrade(trade);
     }
   });
 
   it("get crypto bars", async () => {
-    const resp = await alpaca.getCryptoBars(["ETH/USD"], {
+    const resp = [];
+
+    for await (const data of alpaca.getCryptoBars(["ETH/USD"], {
       timeframe: "1D",
       start: "2021-08-10",
       limit: 1,
-    });
+    })) {
+      resp.push(data);
+    }
 
-    expect(resp.size).equal(1);
-    assertCryptoBar(resp.get("ETH/USD")[0]);
+    expect(resp.length).equal(1);
+    assertCryptoBar(resp[0]);
   });
 
   it("get crypto bars with exchanges", async () => {
     await expect(
-      alpaca.getCryptoBars(["DOGE/USD"], {
-        start: "2023-04-27",
-        limit: 1,
-        timeframe: "1D",
-        exchanges: ["BNCU"],
-      })
+      alpaca
+        .getCryptoBars(["DOGE/USD"], {
+          start: "2023-04-27",
+          limit: 1,
+          timeframe: "1D",
+          exchanges: ["BNCU"],
+        })
+        .next()
     ).to.eventually.be.rejectedWith(
       "code: 400, message: Unexpected query parameter(s): exchanges"
     );
   });
 
   it("get snapshots", async () => {
-    const resp = await alpaca.getCryptoSnapshots(["BTC/USD"]);
-    expect(resp.size).equal(1);
-    assertCryptoSnapshot(resp.get("BTC/USD"));
+    const resp = [];
+    for await (const data of alpaca.getCryptoSnapshots(["BTC/USD"])) {
+      resp.push(data);
+    }
+    expect(resp.length).equal(1);
+    assertCryptoSnapshot(resp[0]);
   });
 
   it("get orderbooks", async () => {
-    const resp = await alpaca.getCryptoOrderbooks(["ETH/USD", "BTC/USD"]);
-    expect(resp.size).equal(2);
-    assertCryptoOrderbook(resp.get("BTC/USD"));
-    assertCryptoOrderbook(resp.get("ETH/USD"));
+    const resp = [];
+    for await (const data of alpaca.getCryptoOrderbooks([
+      "ETH/USD",
+      "BTC/USD",
+    ])) {
+      resp.push(data);
+    }
+    expect(resp.length).equal(2);
+    assertCryptoOrderbook(resp[0]);
+    assertCryptoOrderbook(resp[1]);
   });
 
   it("get historical quotes", async () => {
-    const resp = await alpaca.getCryptoQuotes(["BTC/USD"], {
+    const resp = [];
+    for await (const data of alpaca.getCryptoQuotes(["BTC/USD"], {
       start: "2024-06-25",
       limit: 1,
-    });
-    expect(resp.size).equal(1);
+    })) {
+      resp.push(data);
+    }
+    expect(resp.length).equal(1);
 
-    const quote = resp.get("BTC/USD");
-    const q = quote[0];
-    assert.equal(q.AskPrice, 60849.5);
-    assert.equal(q.AskSize, 0.56);
-    assert.equal(q.BidPrice, 60772.395);
-    assert.equal(q.BidSize, 0.5549);
-    assert.equal(q.Timestamp, "2024-06-27T00:01:28.222959058Z");
+    const quote = resp[0];
+    assert.equal(quote.AskPrice, 60849.5);
+    assert.equal(quote.AskSize, 0.56);
+    assert.equal(quote.BidPrice, 60772.395);
+    assert.equal(quote.BidSize, 0.5549);
+    assert.equal(quote.Timestamp, "2024-06-27T00:01:28.222959058Z");
   });
 });
 
@@ -360,11 +411,13 @@ describe("news API", () => {
     alpaca = new api(mock.getConfig());
   });
   it("get news", async () => {
-    const news = await alpaca.getNews({});
-
+    const news = [];
+    for await (const item of alpaca.getNews({})) {
+      news.push(item);
+    }
     expect(news.length).equal(2);
-    const news1 = news[0];
 
+    const news1 = news[0];
     assert.equal(news1.ID, 20472678);
     assert.equal(news1.Headline, "CEO John Krafcik Leaves Waymo");
     assert.equal(news1.Author, "Bibhu Pattnaik");
@@ -375,7 +428,7 @@ describe("news API", () => {
 
   it("get news with wrong parameters", async () => {
     await expect(
-      alpaca.getNews({ symbols: ["AAPL", "GE"], totalLimit: -1 })
+      alpaca.getNews({ symbols: ["AAPL", "GE"], totalLimit: -1 }).next()
     ).to.eventually.be.rejectedWith("negative total limit");
   });
 });
@@ -388,13 +441,16 @@ describe("options API", () => {
   });
 
   it("get bars", async () => {
-    const bars = await alpaca.getOptionBars(["AAPL240419P00140000"], {
+    const bars = [];
+    for await (const bar of alpaca.getOptionBars(["AAPL240419P00140000"], {
       start: "2024-01-18",
       timeframe: "1D",
-    });
+    })) {
+      bars.push(bar);
+    }
+    expect(bars.length).equal(1);
 
-    expect(bars.size).equal(1);
-    const applBar = bars.get("AAPL240419P00140000")[0];
+    const applBar = bars[0];
     assert.equal(applBar.Timestamp, "2024-01-18T05:00:00Z");
     assert.equal(applBar.Open, "0.38");
     assert.equal(applBar.High, "0.38");
@@ -403,9 +459,12 @@ describe("options API", () => {
   });
 
   it("option chain", async () => {
-    const snapshots = await alpaca.getOptionChain("AAPL", {});
-
+    const snapshots = [];
+    for await (const snapshot of alpaca.getOptionChain("AAPL", {})) {
+      snapshots.push(snapshot);
+    }
     expect(snapshots.length).equal(1);
+
     const snapshot = snapshots[0];
     assert.equal(snapshot.Greeks.delta, 0.7521304109871954);
     assert.equal(snapshot.Greeks.gamma, 0.06241426404871288);
