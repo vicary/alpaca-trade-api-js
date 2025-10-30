@@ -1,9 +1,9 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+
 import events from "events";
 import { TextDecoder } from "util";
 import WebSocket from "ws";
-import entity from "./entity";
+import * as entity from "./entity";
 
 // Listeners
 // A client can listen on any of the following events, states, or errors
@@ -187,11 +187,11 @@ export class AlpacaStreamClient extends events.EventEmitter {
   }
 
   subscribe(keys: string[]) {
-    let wsChannels: string[] = [];
-    let polygonChannels: string[] = [];
+    const wsChannels: string[] = [];
+    const polygonChannels: string[] = [];
     keys.forEach((key) => {
       const poly = ["Q.", "T.", "A.", "AM."];
-      let found = poly.filter((channel) => key.startsWith(channel));
+      const found = poly.filter((channel) => key.startsWith(channel));
       if (found.length > 0) {
         polygonChannels.push(key);
       } else {
@@ -217,10 +217,10 @@ export class AlpacaStreamClient extends events.EventEmitter {
 
   unsubscribe(keys: string[]) {
     // Currently, only Polygon channels can be unsubscribed from
-    let polygonChannels: string[] = [];
+    const polygonChannels: string[] = [];
     keys.forEach((key) => {
       const poly = ["Q.", "T.", "A.", "AM."];
-      let found = poly.filter((channel) => key.startsWith(channel));
+      const found = poly.filter((channel) => key.startsWith(channel));
       if (found.length > 0) {
         polygonChannels.push(key);
       }
@@ -386,7 +386,7 @@ export class AlpacaStreamClient extends events.EventEmitter {
     if (bytes.length === 1 && bytes[0] === 1) {
       return;
     }
-    let message = JSON.parse(new TextDecoder("utf-8").decode(bytes));
+    const message = JSON.parse(new TextDecoder("utf-8").decode(bytes));
     const subject = message.stream;
     if ("error" in message.data) {
       console.log(message.data.error);

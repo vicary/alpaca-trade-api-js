@@ -1,13 +1,13 @@
 import "dotenv/config";
 
-import api from "./api";
-import account from "./resources/account";
-import asset from "./resources/asset";
-import calendar from "./resources/calendar";
-import clock from "./resources/clock";
-import order from "./resources/order";
-import position from "./resources/position";
-import watchlist from "./resources/watchlist";
+import * as api from "./api";
+import * as account from "./resources/account";
+import * as asset from "./resources/asset";
+import * as calendar from "./resources/calendar";
+import * as clock from "./resources/clock";
+import * as order from "./resources/order";
+import * as position from "./resources/position";
+import * as watchlist from "./resources/watchlist";
 
 import * as crypto_websocket from "./resources/datav2/crypto_websocket_v1beta3";
 import * as entityV2 from "./resources/datav2/entityv2";
@@ -131,11 +131,12 @@ export class Alpaca {
   dataHttpRequest = api.dataHttpRequest.bind(this);
   sendRequest(
     endpoint: string,
-    queryParams: Record<string, unknown>,
-    body: unknown,
-    method: string
+    queryParams?: Record<string, unknown>,
+    body?: unknown,
+    method?: string
   ) {
-    return api.sendRequest(
+    return api.sendRequest.call(
+      this,
       this.httpRequest,
       endpoint,
       queryParams,
