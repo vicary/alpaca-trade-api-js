@@ -1,10 +1,6 @@
-"use strict";
-
-const express = require("express");
-const bodyParser = require("body-parser");
-const joi = require("joi");
-const { apiMethod, assertSchema } = require("./assertions");
-const { assert } = require("console");
+import { Hono } from "hono";
+import { z } from "zod";
+import { apiMethod, assertSchema, isoDatetime } from "./assertions";
 
 /**
  * This server mocks http methods from the alpaca crypto and option data api
@@ -13,27 +9,24 @@ const { assert } = require("console");
  * This only exports a router, the actual server is created by mock-server.js
  */
 
-module.exports = function createV1Beta1DataMock() {
-  const v1beta1 = express.Router().use(bodyParser.json());
+export default function createV1Beta1DataMock() {
+  const v1beta1 = new Hono();
 
   v1beta1.get(
     "/news",
     apiMethod((req) => {
       assertSchema(req.query, {
-        symbols: joi.string(),
-        start: joi.string().isoDate().optional(),
-        end: joi.string().isoDate().optional(),
-        limit: joi.number().integer().min(0).max(50).optional(),
-        page_token: joi.string().optional(),
-        sort: joi.string().optional(),
-        includeContent: joi.boolean().optional(),
-        excludeContentless: joi.boolean().optional(),
+        symbols: z.string().optional(),
+        start: isoDatetime.optional(),
+        end: isoDatetime.optional(),
+        limit: z.coerce.number().int().min(0).max(50).optional(),
+        page_token: z.string().optional(),
+        sort: z.string().optional(),
+        includeContent: z.coerce.boolean().optional(),
+        excludeContentless: z.coerce.boolean().optional(),
       });
 
-      let resp = { news: [], next_page_token: null };
-
-      news.forEach((n) => resp.news.push(n));
-      return resp;
+      return { news: [...news], next_page_token: null };
     })
   );
 
@@ -41,19 +34,18 @@ module.exports = function createV1Beta1DataMock() {
     "/options/bars",
     apiMethod((req) => {
       assertSchema(req.query, {
-        symbols: joi.string(),
-        start: joi.string().isoDate().optional(),
-        end: joi.string().isoDate().optional(),
-        timeframe: joi.string(),
-        limit: joi.number().integer().optional(),
-        page_token: joi.string().optional(),
+        symbols: z.string(),
+        start: isoDatetime.optional(),
+        end: isoDatetime.optional(),
+        timeframe: z.string(),
+        limit: z.coerce.number().int().optional(),
+        page_token: z.string().optional(),
       });
 
-      let resp = {
+      return {
         bars: { AAPL240419P00140000: [options.bars["AAPL240419P00140000"]] },
         next_page_token: null,
       };
-      return resp;
     })
   );
 
@@ -61,30 +53,29 @@ module.exports = function createV1Beta1DataMock() {
     "/options/snapshots/:underlying_symbol",
     apiMethod((req) => {
       assertSchema(req.query, {
-        feed: joi.string().optional(),
-        type: joi.string().optional(),
-        pageLimit: joi.number().integer().optional(),
-        limit: joi.number().integer().optional(),
-        strike_price_gte: joi.number().optional(),
-        strike_price_lte: joi.number().optional(),
-        expiration_date: joi.string().optional(),
-        expiration_date_gte: joi.string().optional(),
-        expiration_date_lte: joi.string().optional(),
-        root_symbol: joi.string().optional(),
-        page_token: joi.string().optional(),
+        feed: z.string().optional(),
+        type: z.string().optional(),
+        pageLimit: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().optional(),
+        strike_price_gte: z.coerce.number().optional(),
+        strike_price_lte: z.coerce.number().optional(),
+        expiration_date: z.string().optional(),
+        expiration_date_gte: z.string().optional(),
+        expiration_date_lte: z.string().optional(),
+        root_symbol: z.string().optional(),
+        page_token: z.string().optional(),
       });
-      let resp = {
+      return {
         snapshots: {
           AAPL240426C00162500: options.snapshots["AAPL240426C00162500"],
         },
         next_page_token: null,
       };
-      return resp;
     })
   );
 
-  return express.Router().use("/v1beta1", v1beta1);
-};
+  return new Hono().route("/v1beta1", v1beta1);
+}
 
 const news = [
   {

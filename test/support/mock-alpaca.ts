@@ -1,9 +1,6 @@
-"use strict";
-
-const express = require("express");
-const bodyParser = require("body-parser");
-const joi = require("joi");
-const { apiMethod, assertSchema, apiError } = require("./assertions");
+import { Hono } from "hono";
+import { z } from "zod";
+import { apiError, apiMethod, assertSchema } from "./assertions.ts";
 
 /**
  * This server mocks http methods from the alpaca api and returns 200 if the requests are formed correctly.
@@ -15,18 +12,16 @@ const { apiMethod, assertSchema, apiError } = require("./assertions");
 // certain endpoints don't accept ISO timestamps
 const dateRegex = /^\d\d\d\d-\d\d-\d\d$/;
 
-module.exports = function createAlpacaMock() {
-  const v2 = express.Router().use(bodyParser.json());
+export default function createAlpacaMock() {
+  const v2 = new Hono();
 
-  v2.use((req, res, next) => {
-    if (
-      !req.get("APCA-API-KEY-ID") ||
-      !req.get("APCA-API-SECRET-KEY") ||
-      req.get("APCA-API-SECRET-KEY") === "invalid_secret"
-    ) {
-      next(apiError(401));
+  v2.use("*", async (c, next) => {
+    const keyId = c.req.header("APCA-API-KEY-ID");
+    const secretKey = c.req.header("APCA-API-SECRET-KEY");
+    if (!keyId || !secretKey || secretKey === "invalid_secret") {
+      throw apiError(401);
     }
-    next();
+    await next();
   });
 
   v2.get(
@@ -38,13 +33,13 @@ module.exports = function createAlpacaMock() {
     "/orders",
     apiMethod((req) => {
       assertSchema(req.query, {
-        status: joi.string().optional().valid("open", "closed", "all"),
-        limit: joi.number().optional().integer().positive().max(500),
-        after: joi.string().isoDate().optional(),
-        until: joi.string().isoDate().optional(),
-        direction: joi.string().optional().valid("asc", "desc"),
-        nested: joi.string().optional(),
-        symbols: joi.string().optional(),
+        status: z.enum(["open", "closed", "all"]).optional(),
+        limit: z.coerce.number().int().positive().max(500).optional(),
+        after: z.string().datetime().optional(),
+        until: z.string().datetime().optional(),
+        direction: z.enum(["asc", "desc"]).optional(),
+        nested: z.string().optional(),
+        symbols: z.string().optional(),
       });
       return [orderEntity];
     })
@@ -62,7 +57,7 @@ module.exports = function createAlpacaMock() {
     "/orders:by_client_order_id",
     apiMethod((req) => {
       assertSchema(req.query, {
-        client_order_id: joi.string().required(),
+        client_order_id: z.string(),
       });
       return orderEntity;
     })
@@ -72,21 +67,15 @@ module.exports = function createAlpacaMock() {
     "/orders",
     apiMethod((req) => {
       assertSchema(req.body, {
-        symbol: joi.string().required(),
-        qty: joi.number().positive(),
-        notional: joi.number().positive(),
-        side: joi.string().required().valid("buy", "sell"),
-        type: joi
-          .string()
-          .required()
-          .valid("market", "limit", "stop", "stop_limit"),
-        time_in_force: joi
-          .string()
-          .required()
-          .valid("day", "gtc", "opg", "ioc", "fok"),
-        limit_price: joi.number().positive().optional(),
-        stop_price: joi.number().positive().optional(),
-        client_order_id: joi.string().max(48).optional(),
+        symbol: z.string(),
+        qty: z.number().positive().optional(),
+        notional: z.number().positive().optional(),
+        side: z.enum(["buy", "sell"]),
+        type: z.enum(["market", "limit", "stop", "stop_limit"]),
+        time_in_force: z.enum(["day", "gtc", "opg", "ioc", "fok"]),
+        limit_price: z.number().positive().optional(),
+        stop_price: z.number().positive().optional(),
+        client_order_id: z.string().max(48).optional(),
       });
       const { symbol, type, limit_price, stop_price } = req.body;
       if (
@@ -120,7 +109,7 @@ module.exports = function createAlpacaMock() {
     "/positions/:symbol",
     apiMethod((req) => {
       assertSchema(req.params, {
-        symbol: joi.string().required(),
+        symbol: z.string(),
       });
       if (req.params.symbol === "NONE") {
         throw apiError(404);
@@ -135,8 +124,8 @@ module.exports = function createAlpacaMock() {
     "/assets",
     apiMethod((req) => {
       assertSchema(req.query, {
-        status: joi.valid("active", "inactive").optional(),
-        asset_class: joi.string().optional(),
+        status: z.enum(["active", "inactive"]).optional(),
+        asset_class: z.string().optional(),
       });
       return [assetEntity];
     })
@@ -145,7 +134,7 @@ module.exports = function createAlpacaMock() {
   v2.get(
     "/assets/:symbol",
     apiMethod((req) => {
-      assertSchema(req.params, { symbol: joi.string().required() });
+      assertSchema(req.params, { symbol: z.string() });
       if (req.params.symbol === "FAKE") {
         throw apiError(404);
       }
@@ -157,8 +146,8 @@ module.exports = function createAlpacaMock() {
     "/calendar",
     apiMethod((req) => {
       assertSchema(req.query, {
-        start: joi.string().pattern(dateRegex).optional(),
-        end: joi.string().pattern(dateRegex).optional(),
+        start: z.string().regex(dateRegex).optional(),
+        end: z.string().regex(dateRegex).optional(),
       });
       return [calendarEntity];
     })
@@ -178,7 +167,7 @@ module.exports = function createAlpacaMock() {
     "/watchlists/:id",
     apiMethod((req) => {
       assertSchema(req.params, {
-        id: joi.string().required(),
+        id: z.string(),
       });
       if (req.params.id === "nonexistent_watchlist_id") {
         throw apiError(404);
@@ -191,8 +180,8 @@ module.exports = function createAlpacaMock() {
     "/watchlists",
     apiMethod((req) => {
       assertSchema(req.body, {
-        name: joi.string().required(),
-        symbols: joi.string().optional(),
+        name: z.string(),
+        symbols: z.string().optional(),
       });
       return watchlistEntity;
     })
@@ -202,10 +191,10 @@ module.exports = function createAlpacaMock() {
     "/watchlists/:id",
     apiMethod((req) => {
       assertSchema(req.params, {
-        id: joi.string().required(),
+        id: z.string(),
       });
       assertSchema(req.body, {
-        symbol: joi.string().optional(),
+        symbol: z.string().optional(),
       });
       if (req.params.id === "nonexistent_watchlist_id") {
         throw apiError(404);
@@ -218,11 +207,11 @@ module.exports = function createAlpacaMock() {
     "/watchlists/:id",
     apiMethod((req) => {
       assertSchema(req.params, {
-        id: joi.string().required(),
+        id: z.string(),
       });
       assertSchema(req.body, {
-        name: joi.string().optional(),
-        symbols: joi.string().optional(),
+        name: z.string().optional(),
+        symbols: z.string().optional(),
       });
       if (req.params.id === "nonexistent_watchlist_id") {
         throw apiError(404);
@@ -235,7 +224,7 @@ module.exports = function createAlpacaMock() {
     "/watchlists/:id",
     apiMethod((req) => {
       assertSchema(req.params, {
-        id: joi.string().required(),
+        id: z.string(),
       });
       if (req.params.id === "nonexistent_watchlist_id") {
         throw apiError(404);
@@ -248,8 +237,8 @@ module.exports = function createAlpacaMock() {
     "/watchlists/:id/:symbol",
     apiMethod((req) => {
       assertSchema(req.params, {
-        id: joi.string().required(),
-        symbol: joi.string().required(),
+        id: z.string(),
+        symbol: z.string(),
       });
       if (req.params.id === "nonexistent_watchlist_id") {
         throw apiError(404);
@@ -261,14 +250,12 @@ module.exports = function createAlpacaMock() {
     })
   );
 
-  v2.use(
-    apiMethod(() => {
-      throw apiError(404, "route not found");
-    })
-  );
+  v2.notFound(() => {
+    throw apiError(404, "route not found");
+  });
 
-  return express.Router().use("/v2", v2);
-};
+  return new Hono().route("/v2", v2);
+}
 
 const accountEntity = {
   id: "904837e3-3b76-47ec-b432-046db621571b",

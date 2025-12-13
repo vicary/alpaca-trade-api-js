@@ -1,9 +1,9 @@
-"use strict";
+import Fs from "fs";
+import https from "https";
+import msgpack5 from "msgpack5";
+import WebSocket, { Server as WebSocketServer } from "ws";
 
-const WebSocket = require("ws");
-const msgpack = require("msgpack5")();
-const https = require("https");
-const Fs = require("fs");
+const msgpack = msgpack5();
 
 const client = {
   key: "key1",
@@ -73,13 +73,31 @@ const barUpdate_AAPL = {
   vw: 100.123457,
 };
 
-class StreamingWsMock {
-  constructor(port) {
+type SubscriptionState = {
+  trades: string[];
+  quotes: string[];
+  bars: string[];
+  updatedBars: string[];
+  dailyBars: string[];
+  statuses: string[];
+  lulds: string[];
+  cancelErrors: string[];
+  corrections: string[];
+};
+
+export class StreamingWsMock {
+  httpsServer: https.Server;
+  conn: WebSocketServer;
+  subscriptions: SubscriptionState;
+  ready: Promise<void>;
+
+  constructor(port: number) {
     this.httpsServer = https.createServer({
       key: Fs.readFileSync("test/support/key.pem"),
       cert: Fs.readFileSync("test/support//cert.pem"),
     });
-    this.conn = new WebSocket.Server({
+
+    this.conn = new WebSocketServer({
       server: this.httpsServer,
       path: "/v2/sip",
       perMessageDeflate: {
@@ -87,19 +105,27 @@ class StreamingWsMock {
         clientNoContextTakeover: false,
       },
     });
-    this.conn.on("connection", (socket) => {
+
+    this.conn.on("connection", (socket: WebSocket) => {
       socket.send(msgpack.encode([{ T: "success", msg: "connected" }]));
       this.conn.emit("open");
-      socket.on("message", (msg) => {
+
+      socket.on("message", (msg: WebSocket.RawData) => {
         this.messageHandler(msg, socket);
       });
+
       socket.on("error", (err) => console.log(err));
     });
+
     this.conn.on("ping", (data) => {
       this.conn.pong(data);
     });
 
-    this.httpsServer.listen(port);
+    this.ready = new Promise((resolve) => {
+      this.httpsServer.listen(port, () => {
+        resolve();
+      });
+    });
 
     this.subscriptions = {
       trades: [],
@@ -114,8 +140,8 @@ class StreamingWsMock {
     };
   }
 
-  messageHandler(msg, socket) {
-    const message = msgpack.decode(msg);
+  messageHandler(msg: WebSocket.RawData, socket: WebSocket) {
+    const message = msgpack.decode(msg as Buffer) as any;
     const action = message.action ?? null;
 
     if (!action) {
@@ -128,6 +154,7 @@ class StreamingWsMock {
           },
         ])
       );
+      return;
     }
 
     switch (action) {
@@ -139,13 +166,15 @@ class StreamingWsMock {
         break;
       case "unsubscribe":
         this.handleUnsubscription(message, socket);
+        break;
     }
   }
 
-  handleSubscription(msg, socket) {
-    if (!this.checkSubMsgSyntax(msg)) {
+  handleSubscription(msg: any, socket: WebSocket) {
+    if (!this.checkSubMsgSyntax(msg, socket)) {
       return;
     }
+
     this.subscriptions.trades = [...this.subscriptions.trades, ...msg.trades];
     this.subscriptions.quotes = [...this.subscriptions.quotes, ...msg.quotes];
     this.subscriptions.bars = [...this.subscriptions.bars, ...msg.bars];
@@ -162,14 +191,16 @@ class StreamingWsMock {
       ...msg.statuses,
     ];
     this.subscriptions.lulds = [...this.subscriptions.lulds, ...msg.lulds];
+
     socket.send(msgpack.encode(this.createSubMsg()));
     this.streamData(socket);
   }
 
-  handleUnsubscription(msg, socket) {
-    if (!this.checkSubMsgSyntax(msg)) {
+  handleUnsubscription(msg: any, socket: WebSocket) {
+    if (!this.checkSubMsgSyntax(msg, socket)) {
       return;
     }
+
     this.subscriptions.trades = this.subscriptions.trades.filter(
       (val) => msg.trades.indexOf(val) === -1
     );
@@ -189,12 +220,13 @@ class StreamingWsMock {
       (val) => msg.statuses.indexOf(val) === -1
     );
     this.subscriptions.lulds = this.subscriptions.lulds.filter(
-      (val) => msg.lulds.indexof(val) === -1
+      (val) => msg.lulds.indexOf(val) === -1
     );
+
     socket.send(msgpack.encode(this.createSubMsg()));
   }
 
-  checkSubMsgSyntax(msg) {
+  checkSubMsgSyntax(msg: any, socket: WebSocket) {
     if (!msg.trades || !msg.quotes || !msg.bars) {
       socket.send(
         msgpack.encode([
@@ -227,7 +259,7 @@ class StreamingWsMock {
     ];
   }
 
-  streamData(socket) {
+  streamData(socket: WebSocket) {
     if (this.subscriptions.trades.length > 0) {
       socket.send(msgpack.encode([trade_appl]));
     }
@@ -245,7 +277,7 @@ class StreamingWsMock {
     }
   }
 
-  authenticate(message, socket) {
+  authenticate(message: any, socket: WebSocket) {
     if (message.key === client.key && message.secret === client.secret) {
       socket.send(
         msgpack.encode([
@@ -277,7 +309,3 @@ class StreamingWsMock {
     });
   }
 }
-
-module.exports = {
-  StreamingWsMock: StreamingWsMock,
-};

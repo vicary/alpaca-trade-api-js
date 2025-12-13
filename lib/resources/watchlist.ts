@@ -34,7 +34,7 @@ export function addToWatchlist(this: Alpaca, id: string, symbol: string) {
 export function updateWatchlist(
   this: Alpaca,
   id: string,
-  newWatchList: { name: string; symbols?: string[] }
+  newWatchList: { name: string; symbols?: string | string[] }
 ) {
   return this.sendRequest(`/watchlists/${id}`, undefined, newWatchList, "PUT");
 }

@@ -1,7 +1,24 @@
 "use strict";
 
-// @ts-expect-error Definitely-not-Typed, too ancient.
-import joinUrl from "urljoin";
+function joinUrl(base: string, ...parts: string[]): string {
+  const url = new URL(base);
+  const segments: string[] = [];
+
+  const addPart = (part: string) => {
+    const trimmed = part.replace(/^\/+|\/+$/g, "");
+    if (trimmed) segments.push(trimmed);
+  };
+
+  addPart(url.pathname);
+  for (const part of parts) {
+    if (part) addPart(part);
+  }
+
+  url.pathname = "/" + segments.join("/");
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
 
 import { Alpaca } from "./alpaca-trade-api";
 

@@ -1,7 +1,6 @@
 import events from "events";
+import msgpack5, { type MessagePack } from "msgpack5";
 import WebSocket from "ws";
-import { MessagePack } from "msgpack5";
-import msgpack5 from "msgpack5";
 
 // Connection states. Each of these will also emit EVENT.STATE_CHANGE
 export enum STATE {
@@ -79,8 +78,8 @@ interface WebsocketSession {
   backoffIncrement: number;
   url: string;
   currentState: STATE;
-  pongTimeout?: NodeJS.Timeout;
-  pingInterval?: NodeJS.Timer;
+  pongTimeout?: ReturnType<typeof setTimeout>;
+  pingInterval?: ReturnType<typeof setInterval>;
   pongWait: number;
   isReconnected: boolean;
 }

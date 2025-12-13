@@ -1,9 +1,11 @@
-"use strict";
-
-const express = require("express");
-const bodyParser = require("body-parser");
-const joi = require("joi");
-const { apiMethod, assertSchema, apiError } = require("./assertions");
+import { Hono } from "hono";
+import { z } from "zod";
+import {
+  apiError,
+  apiMethod,
+  assertSchema,
+  isoDatetime,
+} from "./assertions.ts";
 
 /**
  * This server mocks http methods from the alpaca crypto data api
@@ -12,33 +14,32 @@ const { apiMethod, assertSchema, apiError } = require("./assertions");
  * This only exports a router, the actual server is created by mock-server.js
  */
 
-module.exports = function createV1Beta3DataMock() {
-  const v1beta3 = express.Router().use(bodyParser.json());
+export default function createV1Beta3DataMock() {
+  const v1beta3 = new Hono();
 
-  v1beta3.use((req, res, next) => {
-    if (
-      !req.get("APCA-API-KEY-ID") ||
-      !req.get("APCA-API-SECRET-KEY") ||
-      req.get("APCA-API-SECRET-KEY") === "invalid_secret"
-    ) {
-      next(apiError(401));
+  v1beta3.use("*", async (c, next) => {
+    const keyId = c.req.header("APCA-API-KEY-ID");
+    const secretKey = c.req.header("APCA-API-SECRET-KEY");
+    if (!keyId || !secretKey || secretKey === "invalid_secret") {
+      throw apiError(401);
     }
-    next();
+    await next();
   });
 
   v1beta3.get(
     "/crypto/us/latest/:endpoint",
     apiMethod((req) => {
       assertSchema(req.query, {
-        symbols: joi.string(),
+        symbols: z.string(),
       });
 
-      let response = {};
-      response[req.params.endpoint] = {};
-      response[req.params.endpoint]["BTC/USD"] =
-        latestDataBySymbol["BTC/USD"][req.params.endpoint];
-      response[req.params.endpoint]["ETH/USD"] =
-        latestDataBySymbol["ETH/USD"][req.params.endpoint];
+      const endpoint = req.params
+        .endpoint as keyof (typeof latestDataBySymbol)["BTC/USD"];
+      const response: Record<string, Record<string, unknown>> = {
+        [endpoint]: {},
+      };
+      response[endpoint]["BTC/USD"] = latestDataBySymbol["BTC/USD"][endpoint];
+      response[endpoint]["ETH/USD"] = latestDataBySymbol["ETH/USD"][endpoint];
       return response;
     })
   );
@@ -49,7 +50,7 @@ module.exports = function createV1Beta3DataMock() {
       if (req.query.symbols != ["BTC/USD"]) {
         throw apiError(422);
       }
-      return { snapshots: snapshots };
+      return { snapshots };
     })
   );
 
@@ -61,35 +62,41 @@ module.exports = function createV1Beta3DataMock() {
       }
 
       assertSchema(req.query, {
-        symbols: joi.string(),
-        start: joi.string().isoDate(),
-        end: joi.string().isoDate().optional(),
-        limit: joi.number().integer().min(0).max(10000).optional(),
-        page_token: joi.string().optional(),
-        timeframe: joi.string().optional(),
-        adjustment: joi.string().optional(),
+        symbols: z.string(),
+        start: isoDatetime,
+        end: isoDatetime.optional(),
+        limit: z.coerce.number().int().min(0).max(10000).optional(),
+        page_token: z.string().optional(),
+        timeframe: z.string().optional(),
+        adjustment: z.string().optional(),
       });
 
-      let response = {
-        next_page_token: req.query.limit > 5 ? "token" : null,
+      const endpoint = req.params
+        .endpoint as keyof (typeof dataBySymbol)["BTC/USD"];
+      const symbols = req.query.symbols as keyof typeof dataBySymbol;
+      const limit = req.query.limit
+        ? Number(req.query.limit) > 5
+          ? 5
+          : Number(req.query.limit)
+        : 3;
+
+      const response: Record<string, unknown> = {
+        next_page_token: Number(req.query.limit) > 5 ? "token" : null,
+        [endpoint]: {
+          [symbols]: [] as unknown[],
+        },
       };
-      response[req.params.endpoint] = {};
-      response[req.params.endpoint][req.query.symbols] = [];
-      let limit = 3;
-      if (req.query.limit) {
-        limit = req.query.limit > 5 ? 5 : req.query.limit;
-      }
+
+      const endpointData = response[endpoint] as Record<string, unknown[]>;
       for (let i = 0; i < limit; i++) {
-        response[req.params.endpoint][req.query.symbols].push(
-          dataBySymbol[req.query.symbols][req.params.endpoint]
-        );
+        endpointData[symbols].push(dataBySymbol[symbols][endpoint]);
       }
       return response;
     })
   );
 
-  return express.Router().use("/v1beta3", v1beta3);
-};
+  return new Hono().route("/v1beta3", v1beta3);
+}
 
 const dataBySymbol = {
   "BTC/USD": {

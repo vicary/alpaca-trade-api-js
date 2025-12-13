@@ -1,23 +1,47 @@
-"use strict";
+import { Alpaca as alpacaApi } from "../dist/alpaca-trade-api";
+import { StreamingWsMock } from "./support/mock-streaming";
 
-const { expect } = require("chai");
-const { isEqual } = require("lodash");
-const { Alpaca: alpacaApi } = require("../dist/alpaca-trade-api");
-const mockServer = require("./support/mock-streaming");
+function isEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (Number.isNaN(a) && Number.isNaN(b)) return true;
+  if (a == null || b == null) return a === b;
 
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!isEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  if (typeof a === "object" && typeof b === "object") {
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    if (aKeys.length !== bKeys.length) return false;
+    for (const k of aKeys) {
+      if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+      if (!isEqual(a[k], b[k])) return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
 
 describe("data_stream_v2", () => {
-  let streaming_mock;
-  let alpaca;
-  let socket, socket2;
-  let port;
+  let streaming_mock: StreamingWsMock;
+  let alpaca: any;
+  let socket: any, socket2: any;
+  let port: number;
 
-  function sleep(ms) {
+  function sleep(ms: number) {
     return new Promise((r) => setTimeout(r, ms));
   }
 
-  async function waitFor(fn, interval = 1, timeout = 1000) {
+  async function waitFor(fn: () => boolean, interval = 1, timeout = 1000) {
     const start = new Date().getTime();
     while (new Date().getTime() <= start + timeout) {
       if (fn()) {
@@ -28,10 +52,11 @@ describe("data_stream_v2", () => {
     return false;
   }
 
-  before(() => {
+  beforeAll(() => {
     try {
-      streaming_mock = new mockServer.StreamingWsMock(0);
-      port = streaming_mock.conn._server.address().port;
+      streaming_mock = new StreamingWsMock(0);
+      // ws exposes underlying server on the WebSocketServer instance.
+      port = (streaming_mock.conn as any)._server.address().port;
       alpaca = new alpacaApi({
         dataStreamUrl: `http://localhost:${port}`,
         keyId: "key1",
@@ -44,15 +69,15 @@ describe("data_stream_v2", () => {
     }
   });
 
-  after(() => {
+  afterAll(() => {
     socket.disconnect();
     socket2.disconnect();
     streaming_mock.close();
   });
 
   it("user can auth", async () => {
-    let status;
-    socket.onStateChange((state) => {
+    let status: any;
+    socket.onStateChange((state: any) => {
       status = state;
     });
 
@@ -61,11 +86,11 @@ describe("data_stream_v2", () => {
     const res = await waitFor(() => {
       return status === "authenticated";
     });
-    expect(res).to.be.true;
+    expect(res).toBe(true);
   });
 
   it("try to auth with wrong apiKey and Secret", async () => {
-    let status;
+    let status: any;
     const alpaca = new alpacaApi({
       dataStreamUrl: `http://localhost:${port}`,
       keyId: "wrongkey",
@@ -74,7 +99,7 @@ describe("data_stream_v2", () => {
     });
     socket2 = alpaca.data_stream_v2;
 
-    socket2.onError((err) => {
+    socket2.onError((err: any) => {
       status = err;
     });
 
@@ -82,7 +107,7 @@ describe("data_stream_v2", () => {
     const res = await waitFor(() => {
       return status === "auth failed";
     });
-    expect(res).to.be.true;
+    expect(res).toBe(true);
   });
 
   it("subscribe for symbol", async () => {
@@ -104,7 +129,7 @@ describe("data_stream_v2", () => {
     const res = await waitFor(() => {
       return isEqual(socket.getSubscriptions(), expectedSubs);
     });
-    expect(res).to.be.true;
+    expect(res).toBe(true);
   });
 
   it("unsubscribe from symbol", async () => {
@@ -123,14 +148,14 @@ describe("data_stream_v2", () => {
     socket.unsubscribeFromTrades("AAPL");
     socket.unsubscribeFromBars(["GE"]);
 
-    const res = await waitFor(() => {
-      return isEqual(socket.getSubscriptions(), expectedSubs);
-    });
-    expect(res).to.be.true;
+    const res = await waitFor(() =>
+      isEqual(socket.getSubscriptions(), expectedSubs)
+    );
+    expect(res).toBe(true);
   });
 
   it("parse streamed trade", async () => {
-    let data;
+    let data: any;
     const parsed = {
       T: "t",
       ID: 1532,
@@ -142,18 +167,18 @@ describe("data_stream_v2", () => {
       Conditions: ["@", "F", "T", "I"],
       Tape: "C",
     };
-    socket.onStockTrade((trade) => {
+    socket.onStockTrade((trade: any) => {
       data = trade;
     });
 
     socket.subscribeForTrades(["AAPL"]);
 
     const res = await waitFor(() => isEqual(data, parsed));
-    expect(res).to.be.true;
+    expect(res).toBe(true);
   });
 
   it("parse streamed quote", async () => {
-    let data;
+    let data: any;
     const parsed = {
       T: "q",
       Symbol: "AAPL",
@@ -167,17 +192,17 @@ describe("data_stream_v2", () => {
       Conditions: "R",
       Tape: "C",
     };
-    socket.onStockQuote((quote) => {
+    socket.onStockQuote((quote: any) => {
       data = quote;
     });
     socket.subscribeForQuotes(["AAPL"]);
 
     const res = await waitFor(() => isEqual(data, parsed));
-    expect(res).to.be.true;
+    expect(res).toBe(true);
   });
 
   it("subscribe for bar and parse it", async () => {
-    let data;
+    let data: any;
     const parsed = {
       T: "b",
       Symbol: "AAPL",
@@ -191,21 +216,18 @@ describe("data_stream_v2", () => {
       TradeCount: 462915,
     };
 
-    socket.onStockBar((bar) => {
+    socket.onStockBar((bar: any) => {
       data = bar;
     });
 
     socket.subscribeForBars(["AAPL"]);
 
-    const res = await waitFor(() => {
-      return isEqual(data, parsed);
-    });
-
-    expect(res).to.be.true;
+    const res = await waitFor(() => isEqual(data, parsed));
+    expect(res).toBe(true);
   });
 
   it("subscribe for status and parse it", async () => {
-    let data;
+    let data: any;
     const parsed = {
       T: "s",
       Symbol: "AAPL",
@@ -217,19 +239,17 @@ describe("data_stream_v2", () => {
       Tape: "Tape",
     };
 
-    socket.onStatuses((s) => {
+    socket.onStatuses((s: any) => {
       data = s;
     });
     socket.subscribeForStatuses(["AAPL"]);
 
-    const res = await waitFor(() => {
-      return isEqual(data, parsed);
-    });
-    expect(res).to.be.true;
+    const res = await waitFor(() => isEqual(data, parsed));
+    expect(res).toBe(true);
   });
 
   it("subscribe for barUpdate and parse it", async () => {
-    let data;
+    let data: any;
     const parsed = {
       T: "u",
       Symbol: "AAPL",
@@ -243,14 +263,12 @@ describe("data_stream_v2", () => {
       VWAP: 100.123457,
     };
 
-    socket.onStockUpdatedBar((bu) => {
+    socket.onStockUpdatedBar((bu: any) => {
       data = bu;
     });
     socket.subscribeForUpdatedBars(["AAPL"]);
 
-    const res = await waitFor(() => {
-      return isEqual(data, parsed);
-    });
-    expect(res).to.be.true;
+    const res = await waitFor(() => isEqual(data, parsed));
+    expect(res).toBe(true);
   });
 });

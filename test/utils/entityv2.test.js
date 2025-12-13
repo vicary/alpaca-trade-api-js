@@ -1,16 +1,24 @@
 "use strict";
 
-const { expect, assert, use } = require("chai");
-const {
-  deepCloneIgnoreUndefined,
-} = require("chai-deep-equal-ignore-undefined");
 const entityV2 = require("../../dist/resources/datav2/entityv2");
+
+function deepCloneIgnoreUndefined(obj) {
+  if (obj === null || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return obj.map(deepCloneIgnoreUndefined);
+  const result = {};
+  for (const key of Object.keys(obj)) {
+    if (obj[key] !== undefined) {
+      result[key] = deepCloneIgnoreUndefined(obj[key]);
+    }
+  }
+  return result;
+}
 
 function assertData(got, expected) {
   const a = deepCloneIgnoreUndefined(got);
   const b = deepCloneIgnoreUndefined(expected);
 
-  expect(a).to.deep.equal(b);
+  expect(a).toEqual(b);
 }
 
 describe("test convert functions", () => {
@@ -43,50 +51,36 @@ describe("test convert functions", () => {
 describe("test timeframe", () => {
   it("test valid day timeframe", () => {
     const got = entityV2.NewTimeframe(1, entityV2.TimeFrameUnit.DAY);
-    expect(got).equal("1Day");
+    expect(got).toBe("1Day");
   });
 
   it("test invalid day timeframe", () => {
-    assert.throws(
-      () => {
-        entityV2.NewTimeframe(15, entityV2.TimeFrameUnit.DAY);
-      },
-      Error,
-      "day and week timeframes can only be used with amount 1"
-    );
+    expect(() => {
+      entityV2.NewTimeframe(15, entityV2.TimeFrameUnit.DAY);
+    }).toThrow("day and week timeframes can only be used with amount 1");
   });
 
   it("test invalid minute timeframe", () => {
-    assert.throws(
-      () => {
-        entityV2.NewTimeframe(72, entityV2.TimeFrameUnit.MIN);
-      },
-      Error,
-      "minute timeframe can only be used with amount between 1-59"
-    );
+    expect(() => {
+      entityV2.NewTimeframe(72, entityV2.TimeFrameUnit.MIN);
+    }).toThrow("minute timeframe can only be used with amount between 1-59");
   });
 
   it("test invalid amount in timeframe", () => {
-    assert.throws(
-      () => {
-        entityV2.NewTimeframe(0, entityV2.TimeFrameUnit.MIN);
-      },
-      Error,
-      "amount must be a positive integer value"
-    );
+    expect(() => {
+      entityV2.NewTimeframe(0, entityV2.TimeFrameUnit.MIN);
+    }).toThrow("amount must be a positive integer value");
   });
 
   it("test valid month timeframe", () => {
     const got = entityV2.NewTimeframe(3, entityV2.TimeFrameUnit.MONTH);
-    expect(got).equal("3Month");
+    expect(got).toBe("3Month");
   });
 
   it("test invalid month timeframe", () => {
-    assert.throws(
-      () => {
-        entityV2.NewTimeframe(11, entityV2.TimeFrameUnit.MONTH);
-      },
-      Error,
+    expect(() => {
+      entityV2.NewTimeframe(11, entityV2.TimeFrameUnit.MONTH);
+    }).toThrow(
       "month timeframe can only be used with amount 1, 2, 3, 6 and 12"
     );
   });

@@ -11,7 +11,7 @@
   "scripts": {
     "prepublishOnly": "tsc",
     "pretest": "npx tsc",
-    "test": "mocha --timeout 4s test/init.js 'test/**/*.test.js'",
+    "test": "vitest run",
     "tsc:w": "tsc -w",
     "lint": "eslint **/*.ts --no-warn-ignored"
   },
@@ -42,24 +42,17 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@types/body-parser": "^1.19.6",
-    "@types/express": "^5.0.6",
+    "@hono/node-server": "^1.19.4",
     "@types/msgpack5": "^3.4.6",
     "@types/node": "^22.19.2",
     "@types/ws": "^8.2.0",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
-    "body-parser": "^1.19.0",
-    "chai": "^4.2.0",
-    "chai-as-promised": "^7.1.1",
-    "chai-deep-equal-ignore-undefined": "^1.1.1",
-    "express": "^4.17.1",
     "globals": "^15.4.0",
-    "joi": "^18.0.1",
-    "lodash": "^4.17.19",
-    "mocha": "^11.7.4",
-    "sinon": "^6.3.5",
+    "hono": "^4.9.3",
     "typescript": "^5.4.5",
     "typescript-eslint": "^8.49.0",
+    "vitest": "^4.0.15",
+    "zod": "^4.1.13"
   }
 }

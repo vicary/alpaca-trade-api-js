@@ -1,6 +1,5 @@
 "use strict";
 
-const expect = require("chai").expect;
 const { Alpaca } = require("../dist/alpaca-trade-api");
 
 describe("alpaca-trade-api", function () {
@@ -21,7 +20,7 @@ describe("alpaca-trade-api", function () {
         timeout: 10000,
       };
       const alpaca = new Alpaca(testConfig);
-      expect(alpaca.configuration).to.deep.equal(testConfig);
+      expect(alpaca.configuration).toEqual(testConfig);
     });
 
     it("allows passing paper: true", () => {
@@ -31,7 +30,7 @@ describe("alpaca-trade-api", function () {
         paper: true,
       };
       const alpaca = new Alpaca(paperConfig);
-      expect(alpaca.configuration).to.include({});
+      expect(alpaca.configuration).toMatchObject({});
     });
   });
 });

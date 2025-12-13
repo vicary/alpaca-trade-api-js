@@ -1,9 +1,11 @@
-"use strict";
-
-const express = require("express");
-const bodyParser = require("body-parser");
-const joi = require("joi");
-const { apiMethod, assertSchema, apiError } = require("./assertions");
+import { Hono } from "hono";
+import { z } from "zod";
+import {
+  apiError,
+  apiMethod,
+  assertSchema,
+  isoDatetime,
+} from "./assertions.ts";
 
 /**
  * This server mocks http methods from the alpaca data v2 api
@@ -12,18 +14,16 @@ const { apiMethod, assertSchema, apiError } = require("./assertions");
  * This only exports a router, the actual server is created by mock-server.js
  */
 
-module.exports = function createDataV2Mock() {
-  const v2 = express.Router().use(bodyParser.json());
+export default function createDataV2Mock() {
+  const v2 = new Hono();
 
-  v2.use((req, res, next) => {
-    if (
-      !req.get("APCA-API-KEY-ID") ||
-      !req.get("APCA-API-SECRET-KEY") ||
-      req.get("APCA-API-SECRET-KEY") === "invalid_secret"
-    ) {
-      next(apiError(401));
+  v2.use("*", async (c, next) => {
+    const keyId = c.req.header("APCA-API-KEY-ID");
+    const secretKey = c.req.header("APCA-API-SECRET-KEY");
+    if (!keyId || !secretKey || secretKey === "invalid_secret") {
+      throw apiError(401);
     }
-    next();
+    await next();
   });
 
   v2.get(
@@ -32,7 +32,7 @@ module.exports = function createDataV2Mock() {
       if (req.params.symbol == null) {
         throw apiError(422);
       }
-      return { ...snapshots[req.params.symbol] };
+      return { ...snapshots[req.params.symbol as keyof typeof snapshots] };
     })
   );
 
@@ -42,8 +42,8 @@ module.exports = function createDataV2Mock() {
       if (req.query.symbols == "") {
         throw apiError(422);
       }
-      const syms = req.query.symbols.split(",");
-      const result = syms.map((s) => snapshots[s]);
+      const syms = (req.query.symbols as string).split(",");
+      const result = syms.map((s) => snapshots[s as keyof typeof snapshots]);
       return result;
     })
   );
@@ -52,17 +52,20 @@ module.exports = function createDataV2Mock() {
     "/stocks/:endpoint/latest",
     apiMethod((req) => {
       assertSchema(req.query, {
-        symbols: joi.string(),
-        timeframe: joi.string().optional(),
+        symbols: z.string(),
+        timeframe: z.string().optional(),
       });
-      const response = { [req.params.endpoint]: {} };
-      const symbols = req.query.symbols.split(",");
+      const endpoint = req.params.endpoint as keyof typeof latest;
+      const response: Record<string, Record<string, unknown>> = {
+        [endpoint]: {},
+      };
+      const symbols = (req.query.symbols as string).split(",");
       symbols.forEach((s) => {
-        response[req.params.endpoint][s] = {};
+        response[endpoint][s] = {};
       });
       let i = 0;
-      for (const s in response[req.params.endpoint]) {
-        response[req.params.endpoint][s] = latest[req.params.endpoint][i].data;
+      for (const s in response[endpoint]) {
+        response[endpoint][s] = latest[endpoint][i].data;
         i++;
       }
       return response;
@@ -73,31 +76,33 @@ module.exports = function createDataV2Mock() {
     "/stocks/:symbol/:endpoint",
     apiMethod((req) => {
       assertSchema(req.query, {
-        start: joi.string().isoDate(),
-        end: joi.string().isoDate(),
-        limit: joi.number().positive().min(1).max(10000).optional(),
-        page_token: joi.string().optional(),
-        timeframe: joi.string().optional(),
-        adjustment: joi.string().optional(),
+        start: isoDatetime,
+        end: isoDatetime,
+        limit: z.coerce.number().positive().min(1).max(10000).optional(),
+        page_token: z.string().optional(),
+        timeframe: z.string().optional(),
+        adjustment: z.string().optional(),
       });
-      let token = req.query.limit > 5 ? "token" : null;
-      if (!req.query.limit || req.query.limit === 4) {
+      const limit = req.query.limit
+        ? Number(req.query.limit) > 5
+          ? 5
+          : Number(req.query.limit)
+        : 5;
+      let token: string | null = Number(req.query.limit) > 5 ? "token" : null;
+      if (!req.query.limit || Number(req.query.limit) === 4) {
         token = "token";
       }
-      let response = {
-        [req.params.endpoint]: [],
+      const endpoint = req.params.endpoint as keyof typeof data;
+      const response: Record<string, unknown> = {
+        [endpoint]: [] as unknown[],
         symbol: req.params.symbol,
         next_page_token: token,
       };
       if (req.query.page_token) {
         response.next_page_token = null;
       }
-      let limit = 5;
-      if (req.query.limit) {
-        limit = req.query.limit > 5 ? 5 : req.query.limit;
-      }
       for (let i = 0; i < limit; i++) {
-        response[req.params.endpoint].push(data[req.params.endpoint]);
+        (response[endpoint] as unknown[]).push(data[endpoint]);
       }
       return response;
     })
@@ -109,11 +114,10 @@ module.exports = function createDataV2Mock() {
       if (req.params.symbol !== latest.trades[0].symbol) {
         throw apiError(422);
       }
-      let resp = {
+      return {
         symbol: latest.trades[0].symbol,
         trade: latest.trades[0].data,
       };
-      return resp;
     })
   );
 
@@ -123,11 +127,10 @@ module.exports = function createDataV2Mock() {
       if (req.params.symbol !== latest.quotes[0].symbol) {
         throw apiError(422);
       }
-      let resp = {
+      return {
         symbol: latest.quotes[0].symbol,
         quote: latest.quotes[0].data,
       };
-      return resp;
     })
   );
 
@@ -135,28 +138,30 @@ module.exports = function createDataV2Mock() {
     "/stocks/:endpoint",
     apiMethod((req) => {
       assertSchema(req.query, {
-        symbols: joi.string(),
-        start: joi.string().isoDate(),
-        end: joi.string().isoDate().optional(),
-        feed: joi.string().optional(),
-        limit: joi.number().positive().min(1).max(10000).optional(),
-        page_token: joi.string().optional(),
-        timeframe: joi.string().optional(),
-        adjustment: joi.string().optional(),
+        symbols: z.string(),
+        start: isoDatetime,
+        end: isoDatetime.optional(),
+        feed: z.string().optional(),
+        limit: z.coerce.number().positive().min(1).max(10000).optional(),
+        page_token: z.string().optional(),
+        timeframe: z.string().optional(),
+        adjustment: z.string().optional(),
       });
-      let response = {
-        [req.params.endpoint]: { FB: [], AAPL: [] },
+      const endpoint = req.params.endpoint as keyof typeof data;
+      const response: Record<string, unknown> = {
+        [endpoint]: { FB: [] as unknown[], AAPL: [] as unknown[] },
         next_page_token: null,
       };
-      for (let s in response[req.params.endpoint]) {
-        response[req.params.endpoint][s].push(data[req.params.endpoint]);
+      const endpointData = response[endpoint] as Record<string, unknown[]>;
+      for (const s in endpointData) {
+        endpointData[s].push(data[endpoint]);
       }
       return response;
     })
   );
 
-  return express.Router().use("/v2", v2);
-};
+  return new Hono().route("/v2", v2);
+}
 
 const data = {
   trades: {
@@ -204,7 +209,6 @@ const latest = {
         z: "C",
       },
     },
-
     {
       symbol: "FB",
       data: {

@@ -1,9 +1,6 @@
-"use strict";
-
-const express = require("express");
-const bodyParser = require("body-parser");
-const joi = require("joi");
-const { apiMethod, assertSchema, apiError } = require("./assertions");
+import { Hono } from "hono";
+import { z } from "zod";
+import { apiError, apiMethod, assertSchema } from "./assertions.ts";
 
 /**
  * This server mocks http methods from the polygon api and returns 200 if the requests are formed correctly.
@@ -12,22 +9,24 @@ const { apiMethod, assertSchema, apiError } = require("./assertions");
  * This only exports a router, the actual server is created by mock-server.js
  */
 
-module.exports = function createPolygonMock() {
-  const v1 = express.Router().use(bodyParser.json());
-  const v2 = express.Router().use(bodyParser.json());
+export default function createPolygonMock() {
+  const v1 = new Hono();
+  const v2 = new Hono();
 
-  v1.use((req, res, next) => {
-    if (!req.query.apiKey) {
-      next(apiError(401));
+  v1.use("*", async (c, next) => {
+    const apiKey = c.req.query("apiKey");
+    if (!apiKey) {
+      throw apiError(401);
     }
-    next();
+    await next();
   });
 
-  v2.use((req, res, next) => {
-    if (!req.query.apiKey) {
-      next(apiError(401));
+  v2.use("*", async (c, next) => {
+    const apiKey = c.req.query("apiKey");
+    if (!apiKey) {
+      throw apiError(401);
     }
-    next();
+    await next();
   });
 
   const validSymbolSortParams = Object.keys(symbolEntity)
@@ -37,28 +36,28 @@ module.exports = function createPolygonMock() {
   v1.get(
     "/meta/symbols",
     apiMethod((req) => {
-      assertSchema(
-        req.query,
-        {
-          sort: joi.valid(validSymbolSortParams).required(),
-          type: joi.valid("etp", "cs").required(),
-          perpage: joi.number().integer().positive().max(50).required(),
-          page: joi.number().integer().positive().required(),
-          isOTC: joi.boolean().required(),
-        },
-        { allowUnknown: true }
-      );
+      assertSchema(req.query, {
+        sort: z.enum(validSymbolSortParams as [string, ...string[]]),
+        type: z.enum(["etp", "cs"]),
+        perpage: z.coerce.number().int().positive().max(50),
+        page: z.coerce.number().int().positive(),
+        isOTC: z.coerce.boolean(),
+        apiKey: z.string().optional(),
+      });
       return [symbolEntity];
     })
   );
 
-  function makeSymbolEndpoint(name, entity) {
+  function makeSymbolEndpoint(
+    name: string | null,
+    entity: Record<string, unknown>
+  ) {
     const path = "/meta/symbols/:symbol" + (name ? `/${name}` : "");
     v1.get(
       path,
       apiMethod((req) => {
         assertSchema(req.params, {
-          symbol: joi.string().required(),
+          symbol: z.string(),
         });
         if (req.params.symbol === "FAKE") throw apiError(404);
         return entity;
@@ -66,13 +65,16 @@ module.exports = function createPolygonMock() {
     );
   }
 
-  function makeSymbolEndpointV2(name, entity) {
+  function makeSymbolEndpointV2(
+    name: string | null,
+    entity: Record<string, unknown>
+  ) {
     const path = "/reference" + (name ? `/${name}` : "") + "/:symbol";
     v2.get(
       path,
       apiMethod((req) => {
         assertSchema(req.params, {
-          symbol: joi.string().required(),
+          symbol: z.string(),
         });
         if (req.params.symbol === "FAKE") throw apiError(404);
         return entity;
@@ -110,8 +112,8 @@ module.exports = function createPolygonMock() {
     "/ticks/stocks/trades/:symbol/:date",
     apiMethod((req) => {
       assertSchema(req.params, {
-        symbol: joi.string().required(),
-        date: joi.date().required(),
+        symbol: z.string(),
+        date: z.coerce.date(),
       });
       return historicTradesV2Entity;
     })
@@ -121,8 +123,8 @@ module.exports = function createPolygonMock() {
     "/ticks/stocks/nbbo/:symbol/:date",
     apiMethod((req) => {
       assertSchema(req.params, {
-        symbol: joi.string().required(),
-        date: joi.date().required(),
+        symbol: z.string(),
+        date: z.coerce.date(),
       });
       return historicQuotesV2Entity;
     })
@@ -132,19 +134,16 @@ module.exports = function createPolygonMock() {
     "/aggs/ticker/:symbol/range/:multiplier/:size/:from/:to",
     apiMethod((req) => {
       assertSchema(req.params, {
-        symbol: joi.string().required(),
-        multiplier: joi.number().integer().required(),
-        size: joi.valid("day", "minute"),
-        from: joi.date().required(),
-        to: joi.date().required(),
+        symbol: z.string(),
+        multiplier: z.coerce.number().int(),
+        size: z.enum(["day", "minute"]),
+        from: z.coerce.date(),
+        to: z.coerce.date(),
       });
-      assertSchema(
-        req.query,
-        {
-          unadjusted: joi.boolean().required(),
-        },
-        { allowUnknown: true }
-      );
+      assertSchema(req.query, {
+        unadjusted: z.coerce.boolean(),
+        apiKey: z.string().optional(),
+      });
       return historicAggregatesV2Entity;
     })
   );
@@ -153,7 +152,7 @@ module.exports = function createPolygonMock() {
     "/last/stocks/:symbol",
     apiMethod((req) => {
       assertSchema(req.params, {
-        symbol: joi.string().required(),
+        symbol: z.string(),
       });
       return lastTradeEntity;
     })
@@ -163,7 +162,7 @@ module.exports = function createPolygonMock() {
     "/last_quote/stocks/:symbol",
     apiMethod((req) => {
       assertSchema(req.params, {
-        symbol: joi.string().required(),
+        symbol: z.string(),
       });
       return lastQuoteEntity;
     })
@@ -173,8 +172,8 @@ module.exports = function createPolygonMock() {
     "/open-close/:symbol/:date",
     apiMethod((req) => {
       assertSchema(req.params, {
-        symbol: joi.string().required(),
-        date: joi.date().required(),
+        symbol: z.string(),
+        date: z.coerce.date(),
       });
       return openCloseEntity;
     })
@@ -184,7 +183,7 @@ module.exports = function createPolygonMock() {
     "/meta/conditions/:ticktype",
     apiMethod((req) => {
       assertSchema(req.params, {
-        ticktype: joi.valid("trades", "quotes"),
+        ticktype: z.enum(["trades", "quotes"]),
       });
       return conditionMapEntity;
     })
@@ -202,8 +201,8 @@ module.exports = function createPolygonMock() {
     })
   );
 
-  return express.Router().use("/v1", v1).use("/v2", v2);
-};
+  return new Hono().route("/v1", v1).route("/v2", v2);
+}
 
 const symbolEntity = {
   symbol: "AAPL",
