@@ -134,7 +134,7 @@ export class Alpaca {
     queryParams?: Record<string, unknown>,
     body?: unknown,
     method?: string
-  ) {
+  ): Promise<any> {
     return api.sendRequest.call(
       this,
       this.httpRequest,
